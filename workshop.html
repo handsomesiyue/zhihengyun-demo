@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 车间管控端</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js"></script>
+<script src="shared/app.js"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">智衡云</div>
+    <div><div class="topbar-title">车间管控</div></div>
+  </div>
+    <div class="topbar-right">
+    <span>2026-09</span>
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <div id="roleSwitcherSlot" data-role="workshop"></div>
+  </div>
+</div>
+<div class="role-layout">
+  <div class="role-sidebar">
+    <div class="role-sidebar-title">功能</div>
+    <div class="role-nav-item active" onclick="switchNav(this,0)">待开工工单</div>
+    <div class="role-nav-item" onclick="switchNav(this,1)">生产中工单</div>
+    <div class="role-nav-item" onclick="switchNav(this,2)">已完工工单</div>
+    <div class="role-nav-item" onclick="switchNav(this,3)">余废料台账</div>
+  </div>
+  <div class="role-main">
+    <div class="role-page-head">
+      <div class="role-page-title">车间生产工作台</div>
+    </div>
+    <div class="role-kpi-grid" id="wsKpi"></div>
+
+    <!-- 待开工工单 -->
+    <div class="role-panel" id="panel-wait">
+      <div class="role-section-title">待开工工单（工艺定额已下达）</div>
+      <div id="waitList"></div>
+    </div>
+
+    <!-- 生产中工单 -->
+    <div class="role-panel" id="panel-prod">
+      <div class="role-section-title">生产中工单</div>
+      <div id="prodList"></div>
+    </div>
+
+    <!-- 已完工工单 -->
+    <div class="role-panel" id="panel-done">
+      <div class="role-section-title">已完工工单</div>
+      <div id="doneList"></div>
+    </div>
+
+    <!-- 余废料台账 -->
+    <div class="role-panel" id="panel-scrap">
+      <div class="role-section-title">余废料台账</div>
+      <div id="scrapList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 报工弹窗 -->
+<div id="reportModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;display:none;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:520px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:16px;font-weight:800;color:var(--gray-800);margin-bottom:16px" id="reportTitle">完工报工</div>
+    <div id="reportForm"></div>
+    <div style="margin-top:20px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-sm" onclick="closeReport()">取消</button>
+      <button class="btn-sm primary" onclick="submitReport()">确认完工上报</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchNav(el, idx) {
+  var items = document.querySelectorAll('.role-nav-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = document.querySelectorAll('.role-main .role-panel');
+  if (panels[idx]) {
+    panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    showToast(el.textContent.trim() + ' 模块建设中', 'warn');
+  }
+}
+
+var reportWOId = null;
+
+function renderWorkshop() {
+  var wait = DB.workOrders.filter(function(w){return w.status==='dispatched';});
+  var prod = DB.workOrders.filter(function(w){return w.status==='in_production';});
+  var done = DB.workOrders.filter(function(w){return w.status==='completed' || w.status==='posted' || w.status==='done';});
+  document.getElementById('wsKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">待开工</div><div class="rk-value">' + wait.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">生产中</div><div class="rk-value" style="color:#2563eb">' + prod.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">今日完工</div><div class="rk-value" style="color:#16a34a">' + done.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">异常预警</div><div class="rk-value" style="color:#dc2626">' + DB.riskAlerts.filter(function(a){return a.status==='open';}).length + '</div></div>';
+
+  // 待开工
+  var whtml = '';
+  if (wait.length === 0) {
+    whtml = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无待开工工单</div>';
+  } else {
+    wait.forEach(function(w) {
+      whtml += '<div class="todo-item"><div class="todo-info"><div class="todo-title">' + w.id + ' · ' + w.component + ' · ' + w.material + '</div>' +
+        '<div class="todo-sub">项目：' + w.project + ' · 预估工时' + w.estHours + 'h · 定额成本' + fmtMoney(w.estCost) + '</div></div>' +
+        '<div class="todo-right"><button class="btn-sm primary" onclick="workshopStart(\'' + w.id + '\')">确认开工</button></div></div>';
+    });
+  }
+  document.getElementById('waitList').innerHTML = whtml;
+
+  // 生产中
+  var phtml = '';
+  if (prod.length === 0) {
+    phtml = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无生产中工单</div>';
+  } else {
+    prod.forEach(function(w) {
+      var progress = w.actualHours ? Math.min(100, Math.round(w.actualHours / w.estHours * 100)) : 0;
+      phtml += '<div class="todo-item"><div class="todo-info"><div class="todo-title">' + w.id + ' · ' + w.component + ' · ' + w.material + '</div>' +
+        '<div class="todo-sub">项目：' + w.project + ' · 预估' + w.estHours + 'h · 已报' + (w.actualHours||0) + 'h · 进度' + progress + '%</div>' +
+        '<div style="background:#e5e7eb;border-radius:4px;height:6px;margin-top:6px;width:200px"><div style="background:#2563eb;height:6px;border-radius:4px;width:' + progress + '%"></div></div></div>' +
+        '<div class="todo-right"><button class="btn-sm warn" onclick="openReport(\'' + w.id + '\')">完工报工</button></div></div>';
+    });
+  }
+  document.getElementById('prodList').innerHTML = phtml;
+
+  // 已完工
+  var dhtml = '<table class="role-table"><tr><th>工单号</th><th>构件</th><th>预估工时</th><th>实际工时</th><th>偏差</th><th>状态</th></tr>';
+  if (done.length === 0) {
+    dhtml += '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:20px">暂无已完工工单</td></tr>';
+  } else {
+    done.forEach(function(w) {
+      var dev = w.actualHours ? ((w.actualHours - w.estHours) / w.estHours * 100).toFixed(1) + '%' : '-';
+      var devColor = w.actualHours && w.actualHours > w.estHours * 1.15 ? '#dc2626' : w.actualHours && w.actualHours > w.estHours ? '#ea580c' : '#16a34a';
+      var statusMap = {completed:'已完工·待过账', posted:'已过账', done:'已完成'};
+      dhtml += '<tr><td>' + w.id + '</td><td>' + w.component + '</td><td>' + w.estHours + 'h</td><td>' + (w.actualHours||'-') + 'h</td><td style="color:' + devColor + ';font-weight:700">' + dev + '</td><td>' + (statusMap[w.status]||w.status) + '</td></tr>';
+    });
+  }
+  dhtml += '</table>';
+  document.getElementById('doneList').innerHTML = dhtml;
+
+  // 余废料台账
+  var scrapData = [
+    {type:'钢材边角料', qty:'125.5kg', rate:'5.2%', status:'正常', wo:'WO-20260901020'},
+    {type:'焊材头', qty:'8.3kg', rate:'12.5%', status:'预警', wo:'WO-20260901018'},
+    {type:'钢材边角料', qty:'156.8kg', rate:'9.8%', status:'预警', wo:'WO-20260901019'},
+    {type:'包装废料', qty:'45kg', rate:'3.1%', status:'正常', wo:'WO-20260901017'}
+  ];
+  var schtml = '<table class="role-table"><tr><th>工单号</th><th>废料类型</th><th>数量</th><th>余废料率</th><th>状态</th><th>处置</th></tr>';
+  scrapData.forEach(function(s) {
+    var color = s.status === '预警' ? '#ea580c' : '#16a34a';
+    schtml += '<tr><td>' + s.wo + '</td><td>' + s.type + '</td><td>' + s.qty + '</td><td style="color:' + color + ';font-weight:700">' + s.rate + '</td><td><span style="color:' + color + '">' + s.status + '</span></td><td><button class="btn-sm" onclick="showToast(\'已登记入库\', \'success\')">登记入库</button></td></tr>';
+  });
+  schtml += '</table>';
+  document.getElementById('scrapList').innerHTML = schtml;
+}
+
+function openReport(woId) {
+  var w = getWOById(woId);
+  if (!w) return;
+  reportWOId = woId;
+  var suggest = w.weight;
+  var whDefault = Math.round(w.weight * 1.06);
+  var scrapDefault = (typeof COST_ASSUMPTIONS !== 'undefined' ? COST_ASSUMPTIONS.defaultScrapRate : 5.5);
+  document.getElementById('reportTitle').textContent = '完工报工 - ' + w.id + '（' + w.component + '）';
+  document.getElementById('reportForm').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    '<div><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">实际工时（h）</label><input type="number" id="rptHours" value="' + w.estHours + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '<div><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">生产完成度（%）</label><input type="number" id="rptProgress" value="100" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '<div><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">实际焊材消耗（kg）</label><input type="number" id="rptWeld" value="' + Math.round(w.weldLength*0.8) + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '<div><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">外协费用（元）</label><input type="number" id="rptOutsource" value="0" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '<div style="grid-column:1/-1"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">余废料率（%）</label><input type="number" id="rptScrap" value="' + scrapDefault + '" step="0.1" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '</div>' +
+    '<div style="margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">' +
+    '<div style="font-size:12px;font-weight:700;color:var(--gray-800);margin-bottom:8px">实际数双源对照（定额建议 · 仓库出库 · 人工填报）</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+    '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">定额建议量（kg）</label><input type="number" id="rptSuggest" value="' + suggest + '" readonly style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#f1f5f9"></div>' +
+    '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">仓库出库量（kg）</label><input type="number" id="rptWarehouse" value="' + whDefault + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">人工填报量（kg）</label><input type="number" id="rptManual" value="' + suggest + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--gray-400);margin-top:8px;line-height:1.5">演示默认：出库略高于定额。企业侧可对接出入库与 MES；不一致超 ' +
+    (typeof COST_ASSUMPTIONS !== 'undefined' ? COST_ASSUMPTIONS.dualSourceTolerancePct : 8) + '% 将触发「双源不一致」预警。</div></div>' +
+    '<div style="margin-top:12px;padding:10px;background:#eff6ff;border-radius:6px;font-size:11px;color:var(--steel-700);line-height:1.6">' +
+    '<strong>定额对比：</strong>预估工时' + w.estHours + 'h · 定额钢材' + w.weight + 'kg · 定额焊材' + Math.round(w.weldLength*0.8) + 'kg<br>' +
+    '提交后自动检测：工时/钢材/焊材/外协/废料 + 进度领料偏离（' + ORDER_DEV_WATCH + '%/' + ORDER_DEV_BAD + '%）+ 双源不一致' +
+    '</div>';
+  document.getElementById('reportModal').style.display = 'flex';
+}
+
+function closeReport() {
+  document.getElementById('reportModal').style.display = 'none';
+  reportWOId = null;
+}
+
+function submitReport() {
+  if (!reportWOId) return;
+  var warehouse = parseFloat(document.getElementById('rptWarehouse').value) || 0;
+  var manual = parseFloat(document.getElementById('rptManual').value) || 0;
+  var suggest = parseFloat(document.getElementById('rptSuggest').value) || 0;
+  var progress = parseFloat(document.getElementById('rptProgress').value) || 100;
+  var materialIssue = suggest > 0 ? Math.round(warehouse / suggest * 100) : 100;
+  var data = {
+    hours: parseFloat(document.getElementById('rptHours').value) || 0,
+    steel: manual,
+    weld: parseFloat(document.getElementById('rptWeld').value) || 0,
+    outsource: parseFloat(document.getElementById('rptOutsource').value) || 0,
+    scrapRate: parseFloat(document.getElementById('rptScrap').value) || 0,
+    systemSuggest: suggest,
+    warehouseQty: warehouse,
+    manualReport: manual,
+    progress: progress,
+    materialIssue: materialIssue
+  };
+  workshopComplete(reportWOId, data);
+  closeReport();
+  renderWorkshop();
+}
+
+renderWorkshop();
+</script>
+</body>
+</html>

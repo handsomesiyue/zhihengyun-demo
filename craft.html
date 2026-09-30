@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 工艺定额端</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js"></script>
+<script src="shared/app.js"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">智衡云</div>
+    <div><div class="topbar-title">工艺定额</div></div>
+  </div>
+    <div class="topbar-right">
+    <span>2026-09</span>
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <div id="roleSwitcherSlot" data-role="craft"></div>
+  </div>
+</div>
+<div class="role-layout">
+  <div class="role-sidebar">
+    <div class="role-sidebar-title">功能</div>
+    <div class="role-nav-item active" onclick="switchNav(this,0)">待办队列</div>
+    <div class="role-nav-item" onclick="switchNav(this,1)">定额测算台</div>
+    <div class="role-nav-item" onclick="switchNav(this,2)">已下达定额</div>
+    <div class="role-nav-item" onclick="switchNav(this,3)">测算反馈</div>
+    <div class="role-nav-item" onclick="switchNav(this,4)">工程图识别</div>
+  </div>
+  <div class="role-main">
+    <div class="role-page-head">
+      <div class="role-page-title">工艺定额工作台</div>
+    </div>
+    <div class="role-kpi-grid" id="craftKpi"></div>
+
+    <!-- 待办队列 -->
+    <div class="role-panel" id="panel-todo">
+      <div class="role-section-title">待办队列（按把握程度排序）</div>
+      <div id="todoList"></div>
+    </div>
+
+    <!-- 定额测算台 -->
+    <div class="role-panel" id="panel-calc">
+      <div class="role-section-title">定额测算台</div>
+      <div id="calcDetail">
+        <div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">请在待办队列中点击「测算」，选择工单进行定额测算</div>
+      </div>
+    </div>
+
+    <!-- 已下达定额 -->
+    <div class="role-panel" id="panel-done">
+      <div class="role-section-title">已下达定额</div>
+      <div id="dispatchedList"></div>
+    </div>
+
+    <!-- 模型反馈 -->
+    <div class="role-panel" id="panel-feedback">
+      <div class="role-section-title">测算反馈与准确率</div>
+      <div id="modelFeedback"></div>
+    </div>
+
+    <!-- 工程图智能识别 -->
+    <div class="role-panel" id="panel-recog">
+      <div class="role-section-title">工程图智能识别（上传 → 识别 → BOM）</div>
+      <div class="recog-card">
+        <div class="upload-zone" id="craftUploadZone" onclick="document.getElementById('craftFileInput').click()">
+          <input type="file" id="craftFileInput" accept="image/*,.pdf" style="display:none" onchange="craftHandleFile(this)">
+          <div class="upload-text" style="font-size:14px;font-weight:700;color:var(--gray-700)">点击上传工程图（PDF/图片）</div>
+          <div class="upload-hint">上传的图纸会送到后端执行真实识别管线：渲染 → 表格检测 → OCR → 自洽校验</div>
+        </div>
+        <div id="craftRecogResult" style="margin-top:12px">
+          <div class="recog-empty">上传工程图后，识别结果将显示在这里</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchNav(el, idx) {
+  var items = document.querySelectorAll('.role-nav-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = document.querySelectorAll('.role-main .role-panel');
+  if (panels[idx]) {
+    panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    showToast(el.textContent.trim() + ' 模块建设中', 'warn');
+  }
+}
+
+var currentCalcWO = null;
+
+function renderCraft() {
+  // KPI
+  var pending = DB.workOrders.filter(function(w){return w.stage==='craft' && w.status==='pending_calc';}).length;
+  var review = DB.workOrders.filter(function(w){return w.stage==='craft' && w.status==='pending_review';}).length;
+  var dispatched = DB.workOrders.filter(function(w){return w.status==='dispatched' || w.status==='in_production' || w.status==='completed' || w.status==='posted' || w.status==='done';}).length;
+  var autoRate = DB.workOrders.length > 0 ? Math.round(DB.workOrders.filter(function(w){return w.confidence>=0.9;}).length / DB.workOrders.length * 100) : 0;
+  document.getElementById('craftKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">待处理定额</div><div class="rk-value">' + pending + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">低置信待复核</div><div class="rk-value" style="color:#ea580c">' + review + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">今日已下达</div><div class="rk-value">' + dispatched + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">自动下达率</div><div class="rk-value" style="color:#16a34a">' + autoRate + '%</div></div>';
+
+  // 待办队列
+  var todos = DB.workOrders.filter(function(w){return w.stage==='craft';}).sort(function(a,b){return b.confidence - a.confidence;});
+  var html = '';
+  if (todos.length === 0) {
+    html = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无待办工单</div>';
+  } else {
+    todos.forEach(function(w) {
+      var confTag = w.confidence >= 0.9 ? '<span class="confidence-tag conf-high">高置信·自动</span>' :
+                    w.confidence >= 0.7 ? '<span class="confidence-tag conf-mid">中置信·复核</span>' :
+                    '<span class="confidence-tag conf-low">低置信·接管</span>';
+      var statusTag = w.status === 'pending_calc' ? '<span style="color:#2563eb;font-size:11px">待测算</span>' : '<span style="color:#ea580c;font-size:11px">待复核</span>';
+      var btn = w.status === 'pending_calc' ?
+        '<button class="btn-sm primary" onclick="openCalc(\'' + w.id + '\')">测算</button>' :
+        '<button class="btn-sm warn" onclick="openCalc(\'' + w.id + '\')">复核</button>';
+      html += '<div class="todo-item">' +
+        '<div class="todo-info"><div class="todo-title">' + w.id + ' · ' + w.component + ' · ' + w.material + ' · 板厚' + w.thickness + 'mm</div>' +
+        '<div class="todo-sub">预估工时' + w.estHours + 'h · 把握度' + w.confidence + ' · ' + statusTag + '</div></div>' +
+        '<div class="todo-right">' + confTag + btn + '</div></div>';
+    });
+  }
+  document.getElementById('todoList').innerHTML = html;
+
+  // 已下达定额
+  var dispatched = DB.workOrders.filter(function(w){return w.status==='dispatched' || w.status==='in_production' || w.status==='completed' || w.status==='posted' || w.status==='done';});
+  var dhtml = '<table class="role-table"><tr><th>工单号</th><th>构件</th><th>材质</th><th>预估工时</th><th>预估成本</th><th>把握度</th><th>当前状态</th></tr>';
+  if (dispatched.length === 0) {
+    dhtml += '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:20px">暂无已下达定额</td></tr>';
+  } else {
+    dispatched.forEach(function(w) {
+      var statusMap = {dispatched:'已下达·待开工', in_production:'生产中', completed:'已完工·待过账', posted:'已过账', done:'已完成'};
+      dhtml += '<tr><td>' + w.id + '</td><td>' + w.component + '</td><td>' + w.material + '</td><td>' + w.estHours + 'h</td><td>' + fmtMoney(w.estCost) + '</td><td>' + w.confidence + '</td><td>' + (statusMap[w.status]||w.status) + '</td></tr>';
+    });
+  }
+  dhtml += '</table>';
+  document.getElementById('dispatchedList').innerHTML = dhtml;
+
+  // 模型反馈
+  var total = DB.workOrders.length;
+  var auto = DB.workOrders.filter(function(w){return w.confidence>=0.9;}).length;
+  var review = DB.workOrders.filter(function(w){return w.confidence>=0.7 && w.confidence<0.9;}).length;
+  var low = DB.workOrders.filter(function(w){return w.confidence<0.7;}).length;
+  var completedWithActual = DB.workOrders.filter(function(w){return w.actualHours != null && w.estHours;});
+  var avgError = 0;
+  if (completedWithActual.length > 0) {
+    var sumErr = 0;
+    completedWithActual.forEach(function(w){ sumErr += Math.abs(w.actualHours - w.estHours) / w.estHours; });
+    avgError = Math.round(sumErr / completedWithActual.length * 100);
+  }
+  document.getElementById('modelFeedback').innerHTML =
+    '<div class="role-kpi-grid" style="margin-bottom:16px">' +
+    '<div class="role-kpi-card"><div class="rk-label">总工单数</div><div class="rk-value">' + total + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">自动下达(≥0.9)</div><div class="rk-value" style="color:#16a34a">' + auto + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">人工复核(0.7-0.9)</div><div class="rk-value" style="color:#ea580c">' + review + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">工程师接管(&lt;0.7)</div><div class="rk-value" style="color:#dc2626">' + low + '</div></div>' +
+    '</div>' +
+    '<div class="role-kpi-card" style="margin-bottom:16px"><div class="rk-label">平均误差率（已完工工单对比）</div><div class="rk-value" style="color:#2563eb">' + avgError + '%</div><div style="font-size:11px;color:var(--gray-500);margin-top:4px">基于' + completedWithActual.length + '个已完工工单的实际工时 vs 预估工时</div></div>';
+}
+
+function openCalc(woId) {
+  var w = getWOById(woId);
+  if (!w) return;
+  currentCalcWO = w;
+  // 切换到测算台
+  var items = document.querySelectorAll('.role-nav-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  items[1].classList.add('active');
+  document.getElementById('panel-calc').scrollIntoView({behavior:'smooth', block:'start'});
+
+  var matCoefMap = {'Q235B':1.0, 'Q345R':1.15, 'Q355B':1.15, '304不锈钢':1.4, '316L':1.6};
+  var mc = matCoefMap[w.material] || 1.0;
+  var hours = estimateHours({weight:w.weight, materialCoef:mc, complexity:w.complexity, process:w.process, batch:w.batch});
+  var cost = estimateCost({weight:w.weight, materialCoef:mc, complexity:w.complexity, process:(w.process || 6), steelPrice:4200}, hours);
+  var seasonal = compareSeasonalUnitCost({weight:w.weight, materialCoef:mc, complexity:w.complexity, process:(w.process || 6), steelPrice:4200}, hours);
+  var conf = calcConfidence({weight:w.weight, materialCoef:mc, complexity:w.complexity, batch:w.batch});
+  var ciLow = Math.round((hours - 1.96 * 2.8) * 10) / 10;
+  var ciHigh = Math.round((hours + 1.96 * 2.8) * 10) / 10;
+  var route = conf >= 0.9 ? '自动下达' : conf >= 0.7 ? '人工复核' : '工程师接管';
+  var routeColor = conf >= 0.9 ? '#16a34a' : conf >= 0.7 ? '#ea580c' : '#dc2626';
+  var steelPerKg = (cost.steel / w.weight).toFixed(2);
+
+  var html = '<div class="role-section-title" style="margin-bottom:12px">定额测算台（' + w.id + '）' +
+    '<span style="float:right;font-size:11px;font-weight:400;color:' + routeColor + '">把握度 ' + conf + ' · ' + route + '</span></div>' +
+    '<div class="two-col">' +
+    '<div class="tech-card" style="margin-bottom:0"><h4 style="font-size:13px;margin-bottom:10px">工艺参数（图纸测算）</h4>' +
+    '<table class="role-table"><tr><th>参数</th><th>值</th></tr>' +
+    '<tr><td>构件族</td><td>' + w.component + '</td></tr>' +
+    '<tr><td>材质</td><td>' + w.material + '（系数' + mc + '）</td></tr>' +
+    '<tr><td>板厚</td><td>' + w.thickness + 'mm</td></tr>' +
+    '<tr><td>重量</td><td>' + w.weight + ' kg</td></tr>' +
+    '<tr><td>焊缝长度</td><td>' + w.weldLength + 'm</td></tr>' +
+    '<tr><td>焊接位置</td><td>立焊</td></tr>' +
+    '<tr><td>孔数</td><td>' + w.holes + '个</td></tr>' +
+    '<tr><td>复杂度</td><td>' + w.complexity + '（1-5）</td></tr>' +
+    '<tr><td>工序数</td><td>' + w.process + '道</td></tr>' +
+    '<tr><td>批量</td><td>' + w.batch + '件</td></tr></table></div>' +
+    '<div class="tech-card" style="margin-bottom:0"><h4 style="font-size:13px;margin-bottom:10px">测算结果（多元线性回归）</h4>' +
+    '<div style="background:linear-gradient(135deg,var(--steel-600),var(--steel-800));color:#fff;padding:14px;border-radius:8px;margin-bottom:12px">' +
+    '<div style="font-size:11px;opacity:.8">预测工时</div><div style="font-size:24px;font-weight:900">' + hours + 'h</div>' +
+    '<div style="font-size:10px;opacity:.75;margin-top:2px">95%置信区间 [' + ciLow + ', ' + ciHigh + ']</div></div>' +
+    '<div style="font-size:12px;color:var(--gray-600);margin-bottom:8px"><strong>路由策略：</strong><span style="color:' + routeColor + ';font-weight:700">' + route + '</span></div>' +
+    '<div style="font-size:11px;color:var(--gray-500);margin-bottom:12px;line-height:1.6">把握度 ' + conf + '（' + (conf < 0.7 ? '低，样本不足需工程师接管' : conf < 0.9 ? '中，需人工复核确认' : '高，可自动下达') + '）</div>' +
+    '<h4 style="font-size:12px;margin-bottom:8px">产量驱动 · 单位成本</h4>' +
+    '<div style="font-size:11px;color:var(--gray-600);line-height:1.7">' +
+    '2月 ¥' + seasonal.unitCostLow + '/kg（分摊 ' + fmtMoney(seasonal.low.fixedShare) + '） vs ' +
+    '6月 ¥' + seasonal.unitCostHigh + '/kg（分摊 ' + fmtMoney(seasonal.high.fixedShare) + '）<br>' +
+    '<span style="color:#1e40af;font-weight:700">' + seasonal.driver + '</span></div></div></div>' +
+    '<div class="role-section-title" style="margin:16px 0 10px">工序成本表（料 · 工 · 费）</div>' +
+    '<table class="role-table"><tr><th>成本项</th><th>金额</th><th>占比</th><th>说明</th></tr>' +
+    '<tr><td>钢材（直接材料）</td><td>' + fmtMoney(cost.steel) + '</td><td>' + Math.round(cost.steel/cost.total*100) + '%</td><td>' + w.weight + 'kg × ' + steelPerKg + '元/kg</td></tr>' +
+    '<tr><td>人工（直接人工）</td><td>' + fmtMoney(cost.labor) + '</td><td>' + Math.round(cost.labor/cost.total*100) + '%</td><td>' + hours + 'h × ' + cost.laborRate + '元/h（复杂度' + w.complexity + '档）</td></tr>' +
+    '<tr><td>外协</td><td>' + fmtMoney(cost.outsource) + '</td><td>' + Math.round(cost.outsource/cost.total*100) + '%</td><td>热处理/无损检测外协</td></tr>' +
+    '<tr><td>设备</td><td>' + fmtMoney(cost.equip) + '</td><td>' + Math.round(cost.equip/cost.total*100) + '%</td><td>卷板机/焊机/钻床台班</td></tr>' +
+    '<tr><td>涂装</td><td>' + fmtMoney(cost.coating) + '</td><td>' + Math.round(cost.coating/cost.total*100) + '%</td><td>喷砂+底漆+面漆</td></tr>' +
+    '<tr><td>制造费用（固定分摊）</td><td>' + fmtMoney(cost.fixedShare) + '</td><td>' + Math.round(cost.fixedShare/cost.total*100) + '%</td><td>月池 ' + fmtMoney(cost.monthlyFixedCost) + ' × 本单/' + cost.monthVolumeTons + '吨</td></tr>' +
+    '<tr><td>安装</td><td>' + fmtMoney(cost.install) + '</td><td>' + Math.round(cost.install/cost.total*100) + '%</td><td>现场安装预估</td></tr>' +
+    '<tr style="font-weight:700;background:var(--gray-50)"><td>合计</td><td>' + fmtMoney(cost.total) + '</td><td>100%</td><td></td></tr></table>' +
+    '<div style="margin-top:16px;display:flex;gap:8px">' +
+    '<button class="btn-sm primary" onclick="confirmDispatch(\'' + w.id + '\', ' + hours + ', ' + cost.total + ', ' + conf + ')">确认下达</button>' +
+    '<button class="btn-sm warn" onclick="craftReject(\'' + w.id + '\')">改变重算</button>' +
+    '<button class="btn-sm" onclick="showToast(\'已导出BOM清单\', \'success\')">导出BOM</button>' +
+    '</div>';
+  document.getElementById('calcDetail').innerHTML = html;
+}
+
+function confirmDispatch(woId, hours, cost, conf) {
+  var w = getWOById(woId);
+  if (!w) return;
+  w.estHours = hours;
+  w.estCost = cost;
+  w.confidence = conf;
+  if (w.status === 'pending_calc') {
+    w.status = 'pending_review';
+    saveDB();
+    showToast('✅ 测算完成，待复核', 'success');
+  } else {
+    craftDispatch(woId);
+  }
+  renderCraft();
+}
+
+// 页面加载时渲染
+renderCraft();
+
+/* ===== 工程图智能识别（复用后端识别管线）===== */
+var craftRecogRunning = false;
+async function craftHandleFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var result = document.getElementById('craftRecogResult');
+  result.innerHTML = '<div class="recog-empty">正在上传工程图…</div>';
+  try {
+    var fd = new FormData(); fd.append('file', file);
+    var r = await fetch('/api/drawings/upload', { method: 'POST', body: fd });
+    var j = await r.json();
+    if (j.code !== 0) throw new Error(j.message);
+    await craftRunRecognition(j.data.path, file.name);
+  } catch (e) {
+    result.innerHTML = '<div class="recog-empty" style="color:#dc2626">上传失败：' + e.message + '</div>';
+  }
+}
+async function craftRunRecognition(path, label) {
+  if (craftRecogRunning) return;
+  craftRecogRunning = true;
+  var result = document.getElementById('craftRecogResult');
+  result.innerHTML = '<div class="recog-empty">正在对 <b>' + label + '</b> 执行真实解析…<br>' +
+    '<span style="font-size:11px;color:var(--gray-500)">渲染图纸 → 检测表格网格 → OCR 识别 → 自洽校验（约 10-20 秒）</span></div>';
+  try {
+    var r = await fetch('/api/drawings/recognize', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: path })
+    });
+    var j = await r.json();
+    if (j.code !== 0) throw new Error(j.message);
+    craftRenderResult(j.data, label);
+  } catch (e) {
+    result.innerHTML = '<div class="recog-empty" style="color:#dc2626">识别失败：' + e.message + '</div>';
+  }
+  craftRecogRunning = false;
+}
+function craftRenderResult(d, label) {
+  var comps = d.components || [];
+  var rows = comps.slice(0, 12).map(function (c) {
+    return '<tr>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100)">' + (c.code || '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100)">' + (c.name || '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100);font-family:monospace;font-size:11px">' + (c.spec || '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100);text-align:right">' + (c.qty ?? '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100);text-align:right">' + (c.unit_weight != null ? c.unit_weight.toLocaleString() : '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100);text-align:right"><b>' + (c.total_weight != null ? c.total_weight.toLocaleString() : '–') + '</b></td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100)">' + (c.material || '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100)">' + (c.material_class || '–') + '</td>' +
+      '<td style="padding:5px 6px;border-bottom:1px solid var(--gray-100)">' + (c.consistent ? '<span style="color:#16a34a;font-size:11px">自洽</span>' : '<span style="color:#ea580c;font-size:11px">待校</span>') + '</td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('craftRecogResult').innerHTML =
+    '<div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:4px">识别完成 — 解析出 ' + d.n_components + ' 个构件（自洽校验通过 ' + d.n_consistent + ' 个）</div>' +
+    '<div style="font-size:11.5px;color:var(--gray-500);margin-bottom:12px;line-height:1.7">' + label + ' · 部件族：' + (d.family || '–') + ' · 识别置信度：<b>' + d.confidence + '%</b> · 耗时 ' + d.elapsed_sec + 's</div>' +
+    '<div class="param-grid">' +
+    '<div class="param-item"><span class="pk">构件总数</span><span class="pv">' + d.n_components + ' 项</span></div>' +
+    '<div class="param-item"><span class="pk">合计重量</span><span class="pv">' + (d.total_weight_kg || 0).toLocaleString() + ' kg</span></div>' +
+    '</div>' +
+    '<div style="max-height:230px;overflow:auto;border:1px solid var(--gray-200);border-radius:6px">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
+    '<tr style="background:var(--gray-50)"><th style="padding:5px 6px;text-align:left">图号</th><th style="padding:5px 6px;text-align:left">构件</th><th style="padding:5px 6px;text-align:left">规格</th><th style="padding:5px 6px;text-align:right">数量</th><th style="padding:5px 6px;text-align:right">单重kg</th><th style="padding:5px 6px;text-align:right">总重kg</th><th style="padding:5px 6px;text-align:left">材质</th><th style="padding:5px 6px;text-align:left">类别</th><th style="padding:5px 6px;text-align:left">校验</th></tr>' +
+    rows + '</table></div>';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 成本总览</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js?v=20260930v2"></script>
+<script src="shared/app.js?v=20260930v2"></script>
+<script src="shared/echarts.min.js"></script>
+<style>
+/* ===== 看板页（路演样板 v2）专属细节 ===== */
+.page-title-wrap{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.page-title-wrap .page-title{margin-bottom:0}
+/* 图表明细脚注 */
+.chart-footnote{font-size:11px;color:var(--gray-400);margin-top:8px;line-height:1.6}
+/* 订单表容器 */
+.table-card{padding:4px 6px 6px}
+/* 在制订单表头提示 */
+.table-hint{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<!-- ===== 开机画面（boot splash）===== -->
+<div class="boot-splash" id="bootSplash" aria-hidden="true">
+  <div class="boot-bg-glow g1"></div>
+  <div class="boot-bg-glow g2"></div>
+  <div class="boot-grid"></div>
+  <div class="boot-core">
+    <div class="boot-logo">
+      <div class="boot-logo-mark">衡</div>
+      <div class="boot-title">智衡云</div>
+    </div>
+    <div class="boot-sub">ZHI HENG YUN · 非标作业智能成本管控体系</div>
+    <div class="boot-progress">
+      <div class="boot-bar"><div class="boot-bar-fill" id="bootBarFill"></div></div>
+      <span class="boot-pct" id="bootPct">0%</span>
+    </div>
+    <div class="boot-tip" id="bootTip">正在初始化看板数据…</div>
+  </div>
+  <div class="boot-foot">
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <span class="boot-ver">智衡云 v2.0 · 2026</span>
+  </div>
+</div>
+
+<div class="app-shell">
+  <!-- 左侧：功能导航 -->
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo">衡</div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
+    </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" data-view="overview" onclick="switchView(this,'overview')">成本总览</div>
+      <div class="app-sider-item" data-view="orders" onclick="switchView(this,'orders')">在制订单</div>
+      <div class="app-sider-item" data-view="budget" onclick="switchView(this,'budget')">预算执行</div>
+      <div class="app-sider-item" data-view="alerts" onclick="switchView(this,'alerts')">偏离预警</div>
+    </nav>
+    <div class="app-sider-foot">
+      <a href="data.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>数据底座</span></a>
+      <a href="eval.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>效果评价</span></a>
+      <a href="tech.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>技术说明</span></a>
+      <details class="sider-note">
+        <summary>数据说明</summary>
+        <div class="sider-note-body">数据源自菲达 330MW 电除尘器 169 张真实工程图（OCR 管线还原 233 条 BOM）；工时 MAPE ≤ 12%（理论值，实测待数据到位）；演示数据可一键重置。</div>
+      </details>
+    </div>
+  </aside>
+
+  <div class="app-body">
+    <!-- 顶栏：左面包屑，右角色区 -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb">功能 / <b id="headerTitle">成本总览</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-09</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="home"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+
+      <!-- 成本总览 -->
+      <section class="view-panel active" id="view-overview">
+        <div class="page-header">
+          <div class="page-title-wrap">
+            <div class="page-title">非标业务成本总览</div>
+            <span class="page-badge">数据源自 169 张真实工程图</span>
+          </div>
+        </div>
+
+        <!-- 亮点卡：产量驱动（客户反馈落地） -->
+        <div class="seasonal-hero" style="margin-bottom:14px" id="seasonalDriverCard">
+          <div class="chart-title">产量驱动 · 同构件单位成本（淡季 vs 旺季）<span class="hero-tag">客户建议落地</span></div>
+          <div id="seasonalDriverBody" class="hero-body">加载中…</div>
+        </div>
+
+        <div class="dashboard-grid" id="kpiRow">
+          <div class="dash-card blue">
+            <div class="dash-kpi-head">
+              <div class="dash-label">在制订单预算总额</div>
+              <div class="dash-kpi-icon blue">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              </div>
+            </div>
+            <div class="dash-value" id="kpiBudgetTotal">—<span class="unit">万元</span></div>
+            <div class="dash-change">5 个在制订单合计</div>
+          </div>
+          <div class="dash-card green">
+            <div class="dash-kpi-head">
+              <div class="dash-label">预算消耗率</div>
+              <div class="dash-kpi-icon green">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+            </div>
+            <div class="dash-value" id="kpiCostRate">—<span class="unit">%</span></div>
+            <div class="dash-change" id="kpiCostRateSub">已归集 / 预算</div>
+          </div>
+          <div class="dash-card amber">
+            <div class="dash-kpi-head">
+              <div class="dash-label">在制订单 · 平均完成度</div>
+              <div class="dash-kpi-icon amber">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </div>
+            </div>
+            <div class="dash-value" id="kpiOrders">—<span class="unit">个</span></div>
+            <div class="dash-change" id="kpiOrdersSub">平均生产完成度 —</div>
+          </div>
+          <div class="dash-card red">
+            <div class="dash-kpi-head">
+              <div class="dash-label">进度-料耗偏离预警</div>
+              <div class="dash-kpi-icon red">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+            </div>
+            <div class="dash-value" id="kpiAlert">—<span class="unit">条</span></div>
+            <div class="dash-change" id="kpiAlertDetail">异常 — · 关注 —</div>
+          </div>
+        </div>
+
+        <div class="chart-card" style="margin-bottom:14px">
+          <div class="chart-title"><span class="ct-ico blue">单</span>在制订单成本管控（摘要）</div>
+          <div class="table-hint">
+            <span class="order-note" style="margin-bottom:0">按「进度 − 领料」偏离度排序，偏离 = 领料进度 − 生产完成度</span>
+          </div>
+          <div id="orderTableOverview"></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-title"><span class="ct-ico cyan">执</span>订单完成度 vs 成本消耗</div>
+            <div class="chart-box" id="projectChart" style="height:260px"></div>
+            <div class="chart-footnote">柱 = 生产完成度 / 成本消耗率，线 = 领料进度；线明显高于柱即"料耗超前于进度"</div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title"><span class="ct-ico amber">警</span>偏离预警</div>
+            <div class="alert-list" id="alertListOverview"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 在制订单 -->
+      <section class="view-panel" id="view-orders">
+        <div class="page-header">
+          <div class="page-title">在制订单</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title"><span class="ct-ico blue">单</span>在制订单明细</div>
+          <div id="orderTableFull"></div>
+        </div>
+      </section>
+
+      <!-- 预算执行 -->
+      <section class="view-panel" id="view-budget">
+        <div class="page-header">
+          <div class="page-title">预算执行</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title"><span class="ct-ico green">算</span>月度预算 vs 实际（2026年）</div>
+          <div class="chart-box" id="budgetChart"></div>
+        </div>
+      </section>
+
+      <!-- 偏离预警 -->
+      <section class="view-panel" id="view-alerts">
+        <div class="page-header">
+          <div class="page-title">偏离预警</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title"><span class="ct-ico amber">警</span>待处理偏离</div>
+          <div class="alert-list" id="alertListFull" style="max-height:none"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+/* ===== 开机画面逻辑 ===== */
+(function () {
+  var splash = document.getElementById('bootSplash');
+  if (!splash) return;
+  var booted = false;
+  try { booted = !!(window.sessionStorage && window.sessionStorage.getItem('zhs_booted')); } catch (e) {}
+  if (booted) { if (splash.parentNode) splash.parentNode.removeChild(splash); return; }
+  try { window.sessionStorage.setItem('zhs_booted', '1'); } catch (e) {}
+  var fill = document.getElementById('bootBarFill');
+  var pct = document.getElementById('bootPct');
+  var tip = document.getElementById('bootTip');
+  var steps = ['正在初始化看板数据…', '正在加载 169 张工程图分析结果…', '正在渲染成本图表…', '进入系统'];
+  var DUR = 2600, t0 = null;
+  function tick(now) {
+    if (t0 === null) t0 = now;
+    var p = Math.min((now - t0) / DUR, 1);
+    var v = Math.round(p * 100);
+    if (fill) fill.style.width = v + '%';
+    if (pct) pct.textContent = v + '%';
+    if (tip) tip.textContent = steps[Math.min(Math.floor(p * steps.length), steps.length - 1)];
+    if (p < 1) { requestAnimationFrame(tick); }
+    else {
+      setTimeout(function () {
+        splash.classList.add('boot-done');
+        setTimeout(function () { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 1100);
+      }, 250);
+    }
+  }
+  requestAnimationFrame(tick);
+})();
+
+var VIEW_TITLES = { overview: '成本总览', orders: '在制订单', budget: '预算执行', alerts: '偏离预警' };
+var chartsReady = false;
+var budgetChart, projectChart;
+
+function switchView(el, id) {
+  document.querySelectorAll('.app-sider-item[data-view]').forEach(function(n) {
+    n.classList.toggle('active', n === el);
+  });
+  document.querySelectorAll('.view-panel').forEach(function(p) {
+    p.classList.toggle('active', p.id === 'view-' + id);
+  });
+  document.getElementById('headerTitle').textContent = VIEW_TITLES[id] || id;
+  if (chartsReady) {
+    setTimeout(function() {
+      if (budgetChart) budgetChart.resize();
+      if (projectChart) projectChart.resize();
+    }, 50);
+  }
+}
+
+function renderKpis() {
+  var k = getOrderKpis();
+  document.getElementById('kpiBudgetTotal').innerHTML = k.totalBudget.toLocaleString() + '<span class="unit">万元</span>';
+  document.getElementById('kpiCostRate').innerHTML = k.costRate + '<span class="unit">%</span>';
+  document.getElementById('kpiCostRateSub').textContent = '已归集 ' + k.totalActual.toLocaleString() + ' 万 / 预算 ' + k.totalBudget.toLocaleString() + ' 万';
+  document.getElementById('kpiOrders').innerHTML = k.orderCount + '<span class="unit">个</span>';
+  document.getElementById('kpiOrdersSub').textContent = '平均生产完成度 ' + k.avgProgress + '%';
+  document.getElementById('kpiAlert').innerHTML = k.alertCount + '<span class="unit">条</span>';
+  document.getElementById('kpiAlertDetail').textContent = '异常 ' + k.badCount + ' · 关注 ' + k.watchCount;
+}
+
+function renderSeasonalDriver() {
+  var s = getSeasonalDriverDemo();
+  var el = document.getElementById('seasonalDriverBody');
+  if (!el) return;
+  el.innerHTML =
+    '<b>CF-箱体 1250kg</b>：2 月 ¥' + s.unitCostLow + '/kg（产量 ' + s.low.monthVolumeTons + ' 吨） · ' +
+    '6 月 ¥' + s.unitCostHigh + '/kg（产量 ' + s.high.monthVolumeTons + ' 吨） · 淡季单位成本高 ' + s.deltaPct + '%' +
+    '<span class="hero-tag">产量驱动 · 固定成本分摊</span>';
+}
+
+function renderOrderAlerts(targetId) {
+  var html = '';
+  var alerts = ORDER_DEMO.filter(function(o) { return orderStatus(o) !== '可控'; });
+  if (alerts.length === 0) {
+    html = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无偏离预警</div>';
+  } else {
+    alerts.forEach(function(o) {
+      var st = orderStatus(o);
+      var cls = st === '异常' ? 'high' : 'mid';
+      var dev = orderDeviation(o);
+      html += '<div class="alert-item ' + cls + '" style="cursor:pointer" data-ord-id="' + o.id + '">' +
+        '<div><div class="alert-title">' + o.name + '</div>' +
+        '<div class="alert-desc">生产完成度 ' + o.progress + '% · 领料 ' + o.material + '% · 偏离 ' +
+        (dev > 0 ? '+' : '') + dev + '% · 成本消耗 ' + orderCostRate(o) + '%</div></div>' +
+        '<span class="alert-tag ' + cls + '">' + st + '</span></div>';
+    });
+  }
+  var el = document.getElementById(targetId);
+  if (el) el.innerHTML = html;
+}
+
+var tableHtml = renderOrderTableHtml();
+document.getElementById('orderTableOverview').innerHTML = tableHtml;
+document.getElementById('orderTableFull').innerHTML = tableHtml;
+renderSeasonalDriver();
+renderKpis();
+renderOrderAlerts('alertListOverview');
+renderOrderAlerts('alertListFull');
+
+budgetChart = echarts.init(document.getElementById('budgetChart'));
+budgetChart.setOption({
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  legend: { data: ['预算成本', '实际成本'], top: 0, left: 'center', textStyle: { fontSize: 11 } },
+  grid: { left: 50, right: 20, top: 40, bottom: 25 },
+  xAxis: { type: 'category', data: ['1月','2月','3月','4月','5月','6月','7月','8月','9月'], axisLabel: { fontSize: 11 }, axisLine: { lineStyle: { color: '#cbd5e1' } }, axisTick: { show: false } },
+  yAxis: { type: 'value', name: '万元', nameTextStyle: { fontSize: 11 }, axisLabel: { fontSize: 11 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+  series: [
+    { name: '预算成本', type: 'bar', data: [1850,1920,2100,2250,2380,2450,2520,2480,2350], itemStyle: { color: '#e2e8f0' }, barWidth: '28%' },
+    { name: '实际成本', type: 'bar', data: [1820,1950,2080,2310,2420,2510,2580,2560,2186], itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2563eb'},{offset:1,color:'#1e40af'}]) }, barWidth: '28%' }
+  ]
+});
+
+projectChart = echarts.init(document.getElementById('projectChart'));
+projectChart.setOption({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['生产完成度%', '成本消耗率%', '领料进度%'], top: 0, left: 'center', textStyle: { fontSize: 11 } },
+  grid: { left: 45, right: 20, top: 40, bottom: 55 },
+  xAxis: {
+    type: 'category',
+    data: ORDER_DEMO.map(function(o) { return o.name.replace(/EPC|改造|二期|治理|资源化/g, '').slice(0, 6); }),
+    axisLabel: { fontSize: 10, interval: 0, rotate: 20 },
+    axisLine: { lineStyle: { color: '#cbd5e1' } }, axisTick: { show: false }
+  },
+  yAxis: { type: 'value', name: '%', max: 100, axisLabel: { fontSize: 11 }, splitLine: { lineStyle: { color: '#eef2f7' } } },
+  series: [
+    { name: '生产完成度%', type: 'bar', data: ORDER_DEMO.map(function(o) { return o.progress; }), itemStyle: { color: '#94a3b8' }, barWidth: '18%' },
+    { name: '成本消耗率%', type: 'bar', data: ORDER_DEMO.map(function(o) { return orderCostRate(o); }), itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2563eb'},{offset:1,color:'#1e40af'}]) }, barWidth: '18%' },
+    { name: '领料进度%', type: 'line', data: ORDER_DEMO.map(function(o) { return o.material; }), itemStyle: { color: '#ef4444' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 6 }
+  ]
+});
+chartsReady = true;
+
+window.addEventListener('resize', function() {
+  if (budgetChart) budgetChart.resize();
+  if (projectChart) projectChart.resize();
+});
+</script>
+</body>
+</html>

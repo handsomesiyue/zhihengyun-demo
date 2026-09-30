@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 财务</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js?v=20260929od3"></script>
+<script src="shared/app.js?v=20260929od3"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo">衡</div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+      </div>
+    </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">订单成本总览</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">预算与完成度</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">预归集过账</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">大额会签</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb">功能 / <b>财务核算</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span>2026-09</span>
+          <span class="sep"></span>
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="finance"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="page-header">
+        <div class="page-title">财务成本工作台</div>
+      </div>
+      <div class="role-kpi-grid" id="finKpi"></div>
+
+      <div class="role-panel" id="panel-orders">
+        <div class="role-section-title">订单成本总览</div>
+        <div id="orderOverview"></div>
+      </div>
+
+      <div class="role-panel" id="panel-diff">
+        <div class="role-section-title">预算与完成度对照（按成本中心 · 2026年9月）</div>
+        <div class="two-col" style="margin-bottom:16px">
+          <div>
+            <table class="role-table">
+              <tr><th>成本中心</th><th>标准成本</th><th>实际成本</th><th>差异额</th><th>差异率</th></tr>
+              <tr><td>铆焊一车间</td><td>91.0万</td><td>92.9万</td><td style="color:#dc2626">+1.9万</td><td style="color:#dc2626">+2.0%</td></tr>
+              <tr><td>铆焊二车间</td><td>73.0万</td><td>76.1万</td><td style="color:#dc2626">+3.1万</td><td style="color:#dc2626">+4.3%</td></tr>
+              <tr><td>机加车间</td><td>46.0万</td><td>45.6万</td><td style="color:#16a34a">-0.4万</td><td style="color:#16a34a">-0.9%</td></tr>
+              <tr><td>外协分包</td><td>43.0万</td><td>45.0万</td><td style="color:#dc2626">+2.0万</td><td style="color:#dc2626">+4.5%</td></tr>
+              <tr><td>现场安装</td><td>34.0万</td><td>35.9万</td><td style="color:#dc2626">+1.9万</td><td style="color:#dc2626">+5.5%</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="role-section-title">订单级：完成度 vs 领料 vs 成本消耗</div>
+        <div id="orderCompare"></div>
+      </div>
+
+      <div class="role-panel" id="panel-review">
+        <div class="role-section-title">预归集过账</div>
+        <div id="reviewList"></div>
+      </div>
+
+      <div class="role-panel" id="panel-sign">
+        <div class="role-section-title">大额会签（偏差 ≥ 10万元）</div>
+        <div id="signList"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+function switchNav(el, idx) {
+  var items = document.querySelectorAll('.app-sider-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = document.querySelectorAll('.app-content .role-panel');
+  if (panels[idx]) {
+    panels[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function renderFinance() {
+  var k = getOrderKpis();
+  var pending = DB.workOrders.filter(function(w) { return w.status === 'completed'; });
+  var posted = DB.workOrders.filter(function(w) { return w.status === 'posted' || w.status === 'done'; });
+  var highSign = DB.riskAlerts.filter(function(a) { return a.level === 'high' && a.status === 'open'; }).length;
+
+  document.getElementById('finKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">在制订单</div><div class="rk-value">' + k.orderCount + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">预算消耗率</div><div class="rk-value">' + k.costRate + '%</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">偏离预警</div><div class="rk-value" style="color:#dc2626">' + k.alertCount + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">待过账 / 已过账</div><div class="rk-value">' + pending.length + ' / ' + posted.length + '</div></div>';
+
+  document.getElementById('orderOverview').innerHTML = renderOrderTableHtml();
+
+  var cmp = '<table class="role-table"><tr><th>订单</th><th>生产完成度</th><th>领料进度</th><th>成本消耗率</th><th>判断</th></tr>';
+  ORDER_DEMO.forEach(function(o) {
+    var st = orderStatus(o);
+    cmp += '<tr class="order-row-clickable" data-ord-id="' + o.id + '"><td>' + o.name +
+      '<div style="font-size:10px;color:var(--gray-400)">' + o.id + '</div></td><td>' + o.progress + '%</td><td>' + o.material + '%</td><td>' +
+      orderCostRate(o) + '%</td><td><span class="status-pill ' + orderStatusClass(st) + '">' + st + '</span></td></tr>';
+  });
+  cmp += '</table>';
+  document.getElementById('orderCompare').innerHTML = cmp;
+
+  var rhtml = '';
+  if (pending.length === 0) {
+    rhtml = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无待过账工单</div>';
+  } else {
+    rhtml = '<table class="role-table"><tr><th>工单号</th><th>所属项目</th><th>车间</th><th>作业类型</th><th>预估成本</th><th>状态</th><th>操作</th></tr>';
+    pending.forEach(function(w) {
+      var anomalies = detectAnomalies(w);
+      var hasAnomaly = anomalies.length > 0;
+      var statusTag = hasAnomaly
+        ? '<span class="confidence-tag conf-low">异常·待审</span>'
+        : '<span class="confidence-tag conf-mid">待复核</span>';
+      var amount = w.estCost ? fmtMoney(w.estCost) : '-';
+      rhtml += '<tr><td>' + w.id + '</td><td>' + w.project + '</td><td>铆焊一车间</td><td>焊接作业</td><td>' + amount + '</td><td>' + statusTag + '</td>' +
+        '<td><button class="btn-sm primary" onclick="financePost(\'' + w.id + '\')">过账</button> <button class="btn-sm" onclick="financeReturn(\'' + w.id + '\')">退回</button></td></tr>';
+      if (hasAnomaly) {
+        rhtml += '<tr><td colspan="7" style="background:#fef2f2;padding:8px 12px;font-size:11px;color:#dc2626">检测到异常：' +
+          anomalies.map(function(a) { return a.type + ' ' + a.value; }).join('、') + '，过账后将推送内审追溯</td></tr>';
+      }
+    });
+    rhtml += '</table>';
+  }
+  document.getElementById('reviewList').innerHTML = rhtml;
+
+  var signData = [
+    { id: 'LS-001', project: 'ZZ钢铁除尘EPC', center: '铆焊二车间', amount: '¥128,500', reason: '非标构件返工导致人工超支' },
+    { id: 'LS-002', project: 'XX电厂脱硫改造', center: '外协分包', amount: '¥156,800', reason: '外协单价上调及增补工程量' },
+    { id: 'LS-003', project: 'CC化工VOCs治理', center: '现场安装', amount: '¥112,300', reason: '现场工期延误增加窝工费用' }
+  ];
+  var shtml = '<table class="role-table"><tr><th>编号</th><th>项目</th><th>成本中心</th><th>偏差金额</th><th>偏差原因</th><th>操作</th></tr>';
+  signData.forEach(function(s) {
+    shtml += '<tr><td>' + s.id + '</td><td>' + s.project + '</td><td>' + s.center + '</td><td style="color:#dc2626;font-weight:700">' + s.amount + '</td><td style="font-size:11px">' + s.reason + '</td>' +
+      '<td><button class="btn-sm primary" onclick="showToast(\'会签已通过\', \'success\')">会签</button></td></tr>';
+  });
+  shtml += '</table>';
+  if (highSign > 0) {
+    shtml = '' + shtml;
+  }
+  document.getElementById('signList').innerHTML = shtml;
+}
+
+renderFinance();
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 真实数据底座</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/echarts.min.js"></script>
+<style>
+.data-note{background:#f0f7ff;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a5f;margin-bottom:18px;line-height:1.7}
+.data-note b{color:#1a3a5c}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filter-bar select,.filter-bar input{padding:7px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px}
+.filter-bar button{padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{background:#f3f6fa;padding:9px 10px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid #f0f2f5}
+.tbl tr:hover td{background:#fafbfc}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}
+.tag-ok{background:#dcfce7;color:#166534}
+.tag-partial{background:#fef3c7;color:#92400e}
+.tag-null{background:#f3f4f6;color:#6b7280}
+.src{color:#6b7280;font-size:11.5px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">智衡云</div>
+    <div>
+      <div class="topbar-title">非标作业智能成本管控体系</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <a href="index.html" class="topbar-link">返回企业看板</a>
+    <a href="eval.html" class="topbar-link">效果评价</a>
+    <a href="tech.html" class="topbar-link">技术说明</a>
+  </div>
+</div>
+
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title">真实数据底座 <span class="page-badge">169 张图纸 · 233 条 BOM</span></div>
+  </div>
+
+  <div class="data-note">
+    <b>数据来源说明：</b>菲达环保提供的 169 张 CAD 导出 PDF <b>不含任何文本层</b>（文字已转为矢量曲线），
+    常规 PDF 解析工具提取结果为空。本系统采用「高分辨率渲染 → 表格网格线检测 → OCR 文字识别 → 件数×单重=总重 自洽校验」的解析管线，
+    从明细表中还原出 <b id="noteBom">–</b> 条真实 BOM 记录，并额外提取每张图纸的<b>几何图元特征</b>作为结构复杂度的客观量化指标。
+  </div>
+
+  <div class="chart-card" style="margin-bottom:18px">
+    <div class="chart-title"><span class="ct-ico blue">源</span>数据来源与真实性说明</div>
+    <table class="tbl">
+      <thead><tr><th>数据类别</th><th>来源</th><th>性质</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>BOM 明细</b></td><td>菲达 169 张工程图 PDF「明细表」</td>
+          <td><span class="tag tag-ok">企业真实</span></td>
+          <td>图号、名称、件数、单件重、总重、材质，经「件数×单重≈总重」自洽校验；<br>
+              并从中提取<b>材料规格</b>（如 PL8×180-202、6×25-6000）与<b>材料类别</b>（钢板/型钢/角钢/钢管/标准件），
+              用于区分材料单价与加工工时差异</td>
+        </tr>
+        <tr>
+          <td><b>图纸几何特征</b></td><td>同上（矢量图元统计）</td>
+          <td><span class="tag tag-ok">企业真实</span></td>
+          <td>每张图纸的线条/曲线/矩形数量、图元密度，作为结构复杂度的客观指标</td>
+        </tr>
+        <tr>
+          <td><b>钢材 / 焊材价格</b></td><td>Mysteel 我的钢铁网公开行情（华东，2026-09-14）</td>
+          <td><span class="tag tag-partial">公开行情</span></td>
+          <td>Q235B 3700、Q355B 3980、304 13800、316L 28800 元/吨；企业真实采购价到位后整体替换</td>
+        </tr>
+        <tr>
+          <td><b>工时定额基准</b></td><td>行业经验区间 15–40 h/t，取 22 h/t 为基准</td>
+          <td><span class="tag tag-partial">行业推算</span></td>
+          <td><b>PDF 中不含工时数据</b>（工时属于工艺文件，不在图纸上），故按行业基准 + 材质/复杂度/批量/板厚系数建模</td>
+        </tr>
+        <tr>
+          <td><b>预算 / 财务数据</b></td><td>20250816_财务表格（格式参考）</td>
+          <td><span class="tag tag-null">演示数据</span></td>
+          <td>该表数据非真实，仅用于演示系统链路，不参与任何结论</td>
+        </tr>
+        <tr>
+          <td><b>历史完工样本</b></td><td>基于真实构件 + 模型残差（σ=9%）生成</td>
+          <td><span class="tag tag-null">模拟样本</span></td>
+          <td>用于验证评价体系链路；标注 <code>source=simulated</code>，与真实数据严格区分</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="src" style="margin-top:10px;line-height:1.8">
+      <b>小结：</b>图纸能提供的「构件构成、重量、材质、结构复杂度」已全部用上，占成本模型输入变量的绝大部分；
+      真正缺的是两类——<b>① 工时定额</b>（决定人工成本）、<b>② 材料采购价</b>（决定材料成本）。
+      前者需要企业提供历史工时台账或工时定额表，后者需要采购价目表；拿到后替换
+      <code>data/price_catalog.json</code> 并重训模型即可，系统其余部分无需改动。
+    </div>
+  </div>
+
+  <div class="dashboard-grid" id="kpis"></div>
+
+  <div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title"><span class="ct-ico cyan">重</span>各部件族 BOM 重量构成（吨）</div>
+      <div class="chart-box" id="familyChart" style="height:280px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="ct-ico amber">杂</span>图纸结构复杂度分布（图元密度 · 按部件族）</div>
+      <div class="chart-box" id="densityChart" style="height:280px"></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:18px">
+    <div class="chart-title"><span class="ct-ico blue">单</span>BOM 明细（真实解析结果）</div>
+    <div class="filter-bar">
+      <select id="fFamily"><option value="">全部部件族</option></select>
+      <input id="fQ" placeholder="搜索零件名称或图号…" style="width:200px">
+      <select id="fQuality">
+        <option value="">全部质量等级</option>
+        <option value="ok">ok（三元组自洽）</option>
+        <option value="partial">partial（部分字段）</option>
+      </select>
+      <button onclick="loadBom()">查询</button>
+      <span id="bomCount" style="color:#6b7280;font-size:12.5px"></span>
+    </div>
+    <div style="max-height:420px;overflow:auto">
+      <table class="tbl">
+        <thead><tr>
+          <th>部件族</th><th>图号</th><th>名称</th><th>规格</th><th>材料类别</th><th>件数</th>
+          <th>单重(kg)</th><th>总重(kg)</th><th>材料</th><th>质量</th><th>来源图纸</th>
+        </tr></thead>
+        <tbody id="bomTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:18px">
+    <div class="chart-title"><span class="ct-ico green">价</span>价格参数库（可整体替换为企业真实采购价）</div>
+    <div style="max-height:300px;overflow:auto">
+      <table class="tbl">
+        <thead><tr><th>类别</th><th>参数</th><th>取值</th><th>单位</th><th>说明</th></tr></thead>
+        <tbody id="priceTbody"></tbody>
+      </table>
+    </div>
+    <div class="src" id="priceSrc" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+async function get(p){
+  const r = await fetch(API + p);
+  return (await r.json()).data;
+}
+
+function fmt(n, d){
+  if(n === null || n === undefined) return '<span class="tag tag-null">–</span>';
+  return Number(n).toLocaleString(undefined,{minimumFractionDigits:d||0, maximumFractionDigits:d||0});
+}
+
+async function init(){
+  try{
+    const meta = await get('/api/meta');
+    document.getElementById('noteBom').textContent = meta.bom_rows;
+    const fam = await get('/api/dashboard/bom-by-family');
+
+    document.getElementById('kpis').innerHTML = `
+      <div class="dash-card blue">
+        <div class="dash-label">BOM 明细条目</div>
+        <div class="dash-value">${meta.bom_rows}<span class="unit">条</span></div>
+        <div class="dash-change up">来自 ${meta.drawing_files} 张真实工程图</div>
+      </div>
+      <div class="dash-card green">
+        <div class="dash-label">覆盖部件族</div>
+        <div class="dash-value">${fam.rows.length}<span class="unit">类</span></div>
+        <div class="dash-change up">灰斗 / 壳体 / 钢支架 / 进出口封头</div>
+      </div>
+      <div class="dash-card amber">
+        <div class="dash-label">BOM 累计重量</div>
+        <div class="dash-value">${Math.round(fam.total_tons)}<span class="unit">吨</span></div>
+        <div class="dash-change up">明细累加（含多层级）</div>
+      </div>
+      <div class="dash-card red">
+        <div class="dash-label">价格数据更新</div>
+        <div class="dash-value">${meta.price_updated}</div>
+        <div class="dash-change up">${meta.price_region}</div>
+      </div>`;
+
+    // 部件族重量
+    const c1 = echarts.init(document.getElementById('familyChart'));
+    c1.setOption({
+      tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+      grid:{left:60,right:30,top:20,bottom:40},
+      xAxis:{type:'category',data:fam.rows.map(r=>r.family),axisLabel:{fontSize:11}},
+      yAxis:{type:'value',name:'吨',nameTextStyle:{fontSize:11}},
+      series:[{
+        type:'bar', barWidth:'45%',
+        data:fam.rows.map(r=>r.tons),
+        itemStyle:{color:'#2563eb',borderRadius:[4,4,0,0]},
+        label:{show:true,position:'top',fontSize:11,formatter:'{c} t'}
+      }]
+    });
+
+    // 图元密度分布
+    const dr = await get('/api/drawings?limit=200');
+    const fams = [...new Set(dr.rows.map(r=>r.family))];
+    const series = fams.map(f=>({
+      name:f, type:'scatter', symbolSize:6,
+      data:dr.rows.filter(r=>r.family===f).map(r=>[r.geom_density, r.n_geom])
+    }));
+    const c2 = echarts.init(document.getElementById('densityChart'));
+    c2.setOption({
+      tooltip:{formatter:p=>`${p.seriesName}<br/>图元密度 ${p.value[0]}<br/>图元数 ${p.value[1]}`},
+      legend:{top:0,textStyle:{fontSize:11},itemWidth:10,itemHeight:8},
+      grid:{left:60,right:20,top:40,bottom:40},
+      xAxis:{type:'value',name:'图元密度(/1000mm²)',nameTextStyle:{fontSize:11},nameLocation:'middle',nameGap:25},
+      yAxis:{type:'value',name:'图元数',nameTextStyle:{fontSize:11}},
+      series:series
+    });
+
+    // 价格库
+    const pc = await get('/api/price/catalog');
+    document.getElementById('priceTbody').innerHTML = pc.rows.map(r=>
+      `<tr><td>${r.category}</td><td><b>${r.key}</b></td><td>${fmt(r.value,2)}</td><td>${r.unit||''}</td><td style="color:#6b7280">${r.note||''}</td></tr>`
+    ).join('');
+    document.getElementById('priceSrc').innerHTML = '<b>数据来源：</b>' + (pc.sources||[]).join('<br>');
+
+    // 族筛选
+    const sel = document.getElementById('fFamily');
+    fam.rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.family; o.textContent=r.family; sel.appendChild(o); });
+
+    loadBom();
+  }catch(e){
+    document.querySelector('.data-note').innerHTML =
+      '<b style="color:#dc2626">无法连接后端服务。</b>请通过后端启动页面：在项目根目录执行 ' +
+      '<code>python backend/main.py</code>，然后访问 <code>http://127.0.0.1:8000/data.html</code>';
+  }
+}
+
+async function loadBom(){
+  const f = document.getElementById('fFamily').value;
+  const q = document.getElementById('fQ').value;
+  const qt = document.getElementById('fQuality').value;
+  const d = await get(`/api/bom/items?limit=200&family=${encodeURIComponent(f)}&q=${encodeURIComponent(q)}&quality=${qt}`);
+  document.getElementById('bomCount').textContent = `共 ${d.total} 条，显示前 ${d.rows.length} 条`;
+  document.getElementById('bomTbody').innerHTML = d.rows.map(r=>`
+    <tr>
+      <td>${r.family||''}</td>
+      <td>${r.code||'<span class="tag tag-null">–</span>'}</td>
+      <td>${r.name||''}</td>
+      <td style="font-family:monospace;font-size:11.5px">${r.spec||'<span class="tag tag-null">–</span>'}</td>
+      <td>${r.material_class?('<span class="tag tag-ok">'+r.material_class+'</span>'):'<span class="tag tag-null">未标注</span>'}</td>
+      <td>${fmt(r.qty)}</td>
+      <td>${fmt(r.unit_weight,1)}</td>
+      <td>${fmt(r.total_weight,1)}</td>
+      <td>${r.material||'<span class="tag tag-null">–</span>'}</td>
+      <td><span class="tag tag-${r.quality==='ok'?'ok':'partial'}">${r.quality}</span></td>
+      <td style="color:#9ca3af;font-size:11px">${(r.drawing_file||'').split(/[\\/]/).pop()}</td>
+    </tr>`).join('');
+}
+
+window.addEventListener('resize',()=>{
+  ['familyChart','densityChart'].forEach(id=>{
+    const el=document.getElementById(id); if(el) echarts.getInstanceByDom(el)?.resize();
+  });
+});
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 项目现场端</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js"></script>
+<script src="shared/app.js"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">智衡云</div>
+    <div><div class="topbar-title">项目现场</div></div>
+  </div>
+    <div class="topbar-right">
+    <span>2026-09</span>
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <div id="roleSwitcherSlot" data-role="site"></div>
+  </div>
+</div>
+<div class="role-layout">
+  <div class="role-sidebar">
+    <div class="role-sidebar-title">功能</div>
+    <div class="role-nav-item active" onclick="switchNav(this,0)">现场上报</div>
+    <div class="role-nav-item" onclick="switchNav(this,1)">现场巡检</div>
+    <div class="role-nav-item" onclick="switchNav(this,2)">材料签收</div>
+    <div class="role-nav-item" onclick="switchNav(this,3)">影像资料</div>
+  </div>
+  <div class="role-main">
+    <div class="role-page-head">
+      <div class="role-page-title">项目现场工作台</div>
+    </div>
+    <div class="role-kpi-grid" id="siteKpi"></div>
+
+    <div class="role-panel" id="panel-report">
+      <div class="role-section-title">现场成本数据上报</div>
+      <div class="two-col">
+        <div class="tech-card" style="margin-bottom:0">
+          <h4 style="font-size:13px;margin-bottom:10px">新增上报</h4>
+          <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">所属项目</label>
+            <select id="siteProject" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+              <option>菲达环保 330MW 电除尘器</option>
+            </select></div>
+          <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">部件族</label>
+            <select id="siteFamily" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+              <option value="">不限</option>
+              <option>灰斗</option><option>壳体</option><option>钢支架</option><option>进口封头</option><option>出口封头</option>
+            </select></div>
+          <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">费用类型</label>
+            <select id="siteType" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+              <option>现场人工</option><option>材料消耗</option><option>设备租赁</option><option>临时设施</option><option>其他费用</option>
+            </select></div>
+          <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">金额（元）</label>
+            <input type="number" id="siteAmount" value="5000" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>
+          <div style="margin-bottom:10px"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">备注说明</label>
+            <textarea id="siteRemark" rows="2" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical">现场加班人工费用</textarea></div>
+          <button class="btn-sm primary" onclick="submitSiteReport()" style="width:100%">提交上报</button>
+        </div>
+        <div>
+          <h4 style="font-size:13px;margin-bottom:10px">今日上报记录</h4>
+          <div id="siteReportList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-panel" id="panel-inspect">
+      <div class="role-section-title">现场巡检记录</div>
+      <table class="role-table"><thead><tr><th>巡检时间</th><th>项目</th><th>巡检项</th><th>发现问题</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="inspectBody"></tbody>
+      </table>
+    </div>
+
+    <div class="role-panel" id="panel-material">
+      <div class="role-section-title">材料签收记录</div>
+      <table class="role-table"><thead><tr><th>签收时间</th><th>材料名称</th><th>材质</th><th>数量</th><th>供应商</th><th>签收人</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="materialBody"></tbody>
+      </table>
+    </div>
+
+    <div class="role-panel" id="panel-photo">
+      <div class="role-section-title">影像资料 · 现场构件与图纸对照存档</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="photoGrid"></div>
+      <div style="margin-top:12px;font-size:11px;color:var(--gray-500);text-align:center" id="photoNote">
+        影像为菲达环保真实工程图渲染缩略图，用于现场构件与图纸对照
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchNav(el, idx) {
+  var items = document.querySelectorAll('.role-nav-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = document.querySelectorAll('.role-main .role-panel');
+  if (panels[idx]) {
+    panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    showToast(el.textContent.trim() + ' 模块建设中', 'warn');
+  }
+}
+
+var siteReports = [];
+var siteInspect = [];
+var siteMaterial = [];
+
+function renderSite() {
+  var todayAmt = siteReports.reduce(function(s,r){return s + (r.amount||0);},0);
+  var pending = siteInspect.filter(function(i){return i.status==='待整改';}).length;
+  document.getElementById('siteKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">上报条数</div><div class="rk-value">' + siteReports.length + '条</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">上报金额</div><div class="rk-value">¥' + Math.round(todayAmt).toLocaleString() + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">待整改项</div><div class="rk-value" style="color:#ea580c">' + pending + '项</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">材料签收</div><div class="rk-value" style="color:#16a34a">' + siteMaterial.length + '批</div></div>';
+
+  // 上报记录
+  var html = '';
+  siteReports.forEach(function(r) {
+    html += '<div style="background:var(--gray-50);border-radius:8px;padding:10px 12px;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<span style="font-size:12px;font-weight:700;color:var(--gray-800)">' + r.fee_type +
+        (r.family ? ' <span style="font-weight:400;color:var(--gray-500)">· ' + r.family + '</span>' : '') + '</span>' +
+      '<span style="font-size:13px;font-weight:800;color:#2563eb">¥' + Math.round(r.amount||0).toLocaleString() + '</span></div>' +
+      '<div style="font-size:11px;color:var(--gray-500)">' + (r.created_at||'') + ' · ' + (r.project||'') + '</div>' +
+      '<div style="font-size:11px;color:var(--gray-600);margin-top:2px">' + (r.remark||'') + '</div></div>';
+  });
+  document.getElementById('siteReportList').innerHTML =
+    html || '<div style="color:var(--gray-400);font-size:12px;padding:10px">暂无上报记录</div>';
+
+  // 巡检
+  document.getElementById('inspectBody').innerHTML = siteInspect.map(function(i){
+    var c = i.status==='已整改' ? '#16a34a' : (i.finding && i.finding.indexOf('无异常')>=0 ? '#16a34a' : '#dc2626');
+    return '<tr><td>' + (i.created_at||'') + '</td><td>' + (i.project||'') + '</td><td>' + i.item +
+      '</td><td>' + (i.finding||'') + '</td><td style="color:' + c + ';font-weight:700">' + i.status + '</td>' +
+      '<td>' + (i.status==='已整改' ? '—' :
+        '<button class="btn-sm primary" onclick="resolveInspection(' + i.id + ')">确认整改</button>') + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:20px">暂无巡检记录</td></tr>';
+
+  // 材料签收
+  document.getElementById('materialBody').innerHTML = siteMaterial.map(function(m){
+    var c = m.status==='已签收' ? '#16a34a' : '#ea580c';
+    return '<tr><td>' + (m.created_at||'') + '</td><td>' + (m.material||'') + '</td><td>' + (m.spec||'') +
+      '</td><td>' + (m.qty||0) + (m.unit||'') + '</td><td>' + (m.supplier||'') + '</td><td>' + (m.receiver||'') +
+      '</td><td style="color:' + c + ';font-weight:700">' + m.status + '</td>' +
+      '<td>' + (m.status==='已签收' ? '—' :
+        '<button class="btn-sm primary" onclick="acceptMaterial(' + m.id + ')">确认签收</button>') + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:20px">暂无签收记录</td></tr>';
+}
+
+async function siteApi(p, body){
+  try{
+    const r = await fetch(p, body ? {method:'POST',headers:{'Content-Type':'application/json'},
+                                     body:JSON.stringify(body)} : undefined);
+    const j = await r.json();
+    if(j.code!==0) throw new Error(j.message);
+    return j.data;
+  }catch(e){ showToast('后端不可用：'+e.message,'error'); return null; }
+}
+
+async function loadSiteData(){
+  const [rp, ins, mt] = await Promise.all([
+    siteApi('/api/site/reports'), siteApi('/api/site/inspections'),
+    siteApi('/api/site/material-receipts')]);
+  if(rp) siteReports = rp;
+  if(ins) siteInspect = ins;
+  if(mt) siteMaterial = mt;
+  renderSite();
+
+  // 影像资料：真实工程图渲染缩略图（每个部件族各取 2 张，保证覆盖面）
+  try{
+    const d = await (await fetch('/api/drawings?limit=300')).json();
+    const rows = (d.data && d.data.rows) || [];
+    const byFam = {};
+    rows.forEach(function(r){ (byFam[r.family] = byFam[r.family] || []).push(r); });
+    const picked = [];
+    Object.keys(byFam).forEach(function(f){ picked.push.apply(picked, byFam[f].slice(0, 2)); });
+    const show = (picked.length ? picked : rows).slice(0, 6);
+    document.getElementById('photoGrid').innerHTML = show.map(function(r){
+      const nm = r.file.split(/[\\\\/]/).pop().replace(/\.pdf$/i,'');
+      return '<div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;background:#fff">' +
+        '<img src="' + apiPreviewUrl(r.file) + '" ' +
+        'style="width:100%;height:110px;object-fit:cover;background:#f8fafc;display:block" ' +
+        'onerror="this.style.display=\'none\'">' +
+        '<div style="padding:6px 8px;font-size:11px;color:var(--gray-700);font-weight:600">' + nm + '</div>' +
+        '<div style="padding:0 8px 6px;font-size:10.5px;color:var(--gray-500)">' + r.family +
+        ' · 图元密度 ' + r.geom_density + '</div></div>';
+    }).join('');
+  }catch(e){}
+}
+
+async function submitSiteReport() {
+  var body = {
+    project: document.getElementById('siteProject').value,
+    family: document.getElementById('siteFamily').value,
+    fee_type: document.getElementById('siteType').value,
+    amount: parseFloat(document.getElementById('siteAmount').value) || 0,
+    remark: document.getElementById('siteRemark').value
+  };
+  const r = await siteApi('/api/site/reports', body);
+  if(r){ showToast('✅ 现场数据已提交至后端','success'); loadSiteData(); }
+}
+
+async function resolveInspection(id){
+  const r = await siteApi('/api/site/inspections/'+id+'/resolve', {});
+  if(r){ showToast('✅ 已确认整改','success'); loadSiteData(); }
+}
+
+async function acceptMaterial(id){
+  const r = await siteApi('/api/site/material-receipts/'+id+'/accept', {});
+  if(r){ showToast('✅ 已确认签收','success'); loadSiteData(); }
+}
+
+renderSite();
+loadSiteData();
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 内审追溯端</title>
+<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<script src="shared/static-api.js"></script>
+<script src="shared/cost-assumptions.js"></script>
+<script src="shared/app.js"></script>
+<script src="shared/api.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">智衡云</div>
+    <div><div class="topbar-title">内审追溯</div></div>
+  </div>
+    <div class="topbar-right">
+    <span>2026-09</span>
+    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+    <div id="roleSwitcherSlot" data-role="audit"></div>
+  </div>
+</div>
+<div class="role-layout">
+  <div class="role-sidebar">
+    <div class="role-sidebar-title">功能</div>
+    <div class="role-nav-item active" onclick="switchNav(this,0)">异常工单审核</div>
+    <div class="role-nav-item" onclick="switchNav(this,1)">全链路追溯</div>
+    <div class="role-nav-item" onclick="switchNav(this,2)">风险台账</div>
+    <div class="role-nav-item" onclick="switchNav(this,3)">审计报表</div>
+  </div>
+  <div class="role-main">
+    <div class="role-page-head">
+      <div class="role-page-title">内审追溯工作台</div>
+    </div>
+    <div class="role-kpi-grid" id="auditKpi"></div>
+
+    <div class="role-panel" id="panel-anomaly">
+      <div class="role-section-title">异常工单审核（财务过账后推送）</div>
+      <div id="anomalyList"></div>
+    </div>
+
+    <div class="role-panel" id="panel-trace">
+      <div class="role-section-title" id="traceTitle">全链路追溯</div>
+      <div style="position:relative;padding-left:30px;margin-bottom:20px">
+        <div style="position:absolute;left:10px;top:0;bottom:0;width:2px;background:#e5e7eb"></div>
+        <div id="traceBody"><div style="color:#9ca3af;font-size:12px">加载中…</div></div>
+      </div>
+    </div>
+
+    <div class="role-panel" id="panel-risk">
+      <div class="role-section-title">风险台账 · 按四类风险归集</div>
+      <div class="role-kpi-grid" style="margin-bottom:14px" id="riskClassBox"></div>
+      <div id="riskList"></div>
+    </div>
+
+    <div class="role-panel" id="panel-report">
+      <div class="role-section-title">审计报表</div>
+      <div class="role-kpi-grid" style="margin-bottom:16px" id="reportKpi"></div>
+      <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12px;color:var(--gray-600);line-height:1.9" id="reportDetail">
+      </div>
+    </div>
+
+    <div class="role-panel" id="rootcauseBox" style="display:none;border-left:4px solid #2563eb"></div>
+  </div>
+</div>
+
+<script>
+function switchNav(el, idx) {
+  var items = document.querySelectorAll('.role-nav-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  el.classList.add('active');
+  var panels = document.querySelectorAll('.role-main .role-panel');
+  if (panels[idx]) {
+    panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    showToast(el.textContent.trim() + ' 模块建设中', 'warn');
+  }
+}
+
+function renderAudit() {
+  var posted = DB.workOrders.filter(function(w){return w.status==='posted';});
+  var openRisks = DB.riskAlerts.filter(function(a){return a.status==='open';});
+  var closedRisks = DB.riskAlerts.filter(function(a){return a.status==='closed';});
+  var doneWOs = DB.workOrders.filter(function(w){return w.actualHours!=null;});
+  var abnormal = doneWOs.filter(function(w){return detectAnomalies(w).length>0;});
+
+  document.getElementById('auditKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">待审核异常</div><div class="rk-value" style="color:#dc2626">' + posted.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">开放风险</div><div class="rk-value" style="color:#ea580c">' + openRisks.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">已闭环</div><div class="rk-value" style="color:#16a34a">' + closedRisks.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">异常率</div><div class="rk-value">' +
+      (doneWOs.length ? Math.round(abnormal.length/doneWOs.length*100) : 0) + '%</div></div>';
+
+  // 异常工单审核（带根因分析）
+  var ahtml = '';
+  if (posted.length === 0) {
+    ahtml = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">暂无待审核异常工单</div>';
+  } else {
+    posted.forEach(function(w) {
+      var anomalies = detectAnomalies(w);
+      ahtml += '<div class="todo-item" style="border-left:3px solid #dc2626"><div class="todo-info"><div class="todo-title">' + w.id + ' · ' + w.component + ' · ' + w.project + '</div>' +
+        '<div class="todo-sub">预估' + w.estHours + 'h / 实际' + (w.actualHours||'-') + 'h · 定额' + fmtMoney(w.estCost) + '</div>' +
+        '<div style="margin-top:6px">' + anomalies.map(function(a){return '<span style="display:inline-block;background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:10px;margin-right:6px">' + a.type + ' ' + a.value + '</span>';}).join('') + '</div></div>' +
+        '<div class="todo-right"><button class="btn-sm warn" onclick="showRootCause(\'' + w.id + '\')">🔎 根因分析</button> ' +
+        '<button class="btn-sm primary" onclick="auditApprove(\'' + w.id + '\')">审核通过</button> ' +
+        '<button class="btn-sm" onclick="auditReject(\'' + w.id + '\')">驳回</button></div></div>';
+    });
+  }
+  document.getElementById('anomalyList').innerHTML = ahtml;
+
+  // 风险台账（含文档要求的四类风险归类）
+  var rhtml = '<table class="role-table"><thead><tr><th>预警ID</th><th>工单号</th><th>风险分类</th><th>类型</th><th>偏差值</th><th>等级</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+  DB.riskAlerts.slice(0,40).forEach(function(r) {
+    var levelColor = r.level === 'high' ? '#dc2626' : '#ea580c';
+    var statusColor = r.status === 'open' ? '#ea580c' : '#16a34a';
+    var statusText = r.status === 'open' ? '待处理' : '已闭环';
+    var cls = r.riskClass || '未分类';
+    var clsColor = cls==='流程风险' ? '#2563eb' : cls==='数据风险' ? '#7c3aed'
+                 : cls==='财税合规风险' ? '#ea580c' : cls==='人员与组织影响风险' ? '#0891b2' : '#6b7280';
+    rhtml += '<tr><td>' + r.id + '</td><td>' + (r.woId||'') + '</td>' +
+      '<td><span style="color:' + clsColor + ';font-weight:600;font-size:11.5px">' + cls + '</span></td>' +
+      '<td>' + r.type + '</td>' +
+      '<td style="color:' + levelColor + ';font-weight:700">' + r.value + '</td>' +
+      '<td><span style="color:' + levelColor + '">' + (r.level==='high'?'高':'中') + '</span></td>' +
+      '<td style="color:' + statusColor + '">' + statusText + '</td>' +
+      '<td>' + (r.status==='open' ? '<button class="btn-sm" onclick="closeRisk(\'' + r.id + '\')">闭环</button>' : '-') + '</td></tr>';
+  });
+  rhtml += '</tbody></table>';
+  document.getElementById('riskList').innerHTML = rhtml;
+
+  renderRiskClass();
+  renderReport(doneWOs, abnormal, openRisks, closedRisks);
+  renderTrace();
+}
+
+// 四类风险归集（对应《项目框架和思路》要求的风险分类）
+async function renderRiskClass() {
+  try{
+    const j = await (await fetch('/api/dashboard/risk-by-class')).json();
+    const rows = j.data.rows || [];
+    document.getElementById('riskClassBox').innerHTML = rows.map(function(r){
+      var c = r.risk_class==='流程风险' ? '#2563eb' : r.risk_class==='数据风险' ? '#7c3aed'
+            : r.risk_class==='财税合规风险' ? '#ea580c' : r.risk_class==='人员与组织影响风险' ? '#0891b2' : '#6b7280';
+      return '<div class="role-kpi-card" style="border-left:3px solid ' + c + '">' +
+        '<div class="rk-label" style="color:' + c + ';font-weight:700">' + r.risk_class + '</div>' +
+        '<div class="rk-value">' + r.n + '</div>' +
+        '<div style="font-size:10.5px;color:var(--gray-500);margin-top:3px;line-height:1.5">' +
+          (r.open_n ? '未闭环 ' + r.open_n + ' 条<br>' : '全部已闭环<br>') + (r.desc||'') + '</div></div>';
+    }).join('');
+  }catch(e){}
+}
+
+function renderReport(doneWOs, abnormal, openRisks, closedRisks) {
+  var byType = {};
+  DB.riskAlerts.forEach(function(r){ byType[r.type] = (byType[r.type]||0)+1; });
+  var tot = DB.riskAlerts.length || 1;
+  var dist = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a];})
+    .map(function(k){ return k + ' ' + Math.round(byType[k]/tot*100) + '%'; }).join(' · ') || '暂无';
+  document.getElementById('reportKpi').innerHTML =
+    '<div class="role-kpi-card"><div class="rk-label">已完工工单</div><div class="rk-value">' + doneWOs.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">异常工单</div><div class="rk-value" style="color:#dc2626">' + abnormal.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">已闭环</div><div class="rk-value" style="color:#16a34a">' + closedRisks.length + '</div></div>' +
+    '<div class="role-kpi-card"><div class="rk-label">处理中</div><div class="rk-value" style="color:#ea580c">' + openRisks.length + '</div></div>';
+  document.getElementById('reportDetail').innerHTML =
+    '<strong>异常类型分布：</strong>' + dist + '<br>' +
+    '<strong>追溯链完整率：</strong>所有工单均保留「识别→测算→下达→开工→报工→过账→内审」全链路留痕<br>' +
+    '<strong>闭环要求：</strong>异常工单须完成根因分析并确认处置措施后方可闭环，审计底稿保留 5 年';
+}
+
+async function renderTrace(woId) {
+  var list = DB.workOrders.filter(function(w){return w.actualHours!=null;});
+  var pick = woId ? getWOById(woId) : list[0];
+  if (!pick) { document.getElementById('traceBody').innerHTML = '<div style="color:#9ca3af;font-size:12px">暂无可追溯工单</div>'; return; }
+  document.getElementById('traceTitle').textContent = '全链路追溯（' + pick.id + ' · ' + pick.component + '）';
+
+  var logs = [];
+  try {
+    var j = await (await fetch('/api/work-orders/' + pick.id)).json();
+    logs = (j.data && j.data.logs) || [];
+  } catch(e){}
+
+  var nodes = [];
+  if (pick.source === 'bom' || pick.source === 'drawing') {
+    nodes.push({t:'工程图识别 / BOM 拆解', d:pick.createdAt, who:'工艺定额端',
+      x:'构件 ' + pick.component + ' · 重量 ' + pick.weight + 'kg · 材质 ' + pick.material, c:'#2563eb'});
+  }
+  logs.forEach(function(l){
+    var ab = detectAnomalies(pick).length > 0 && (l.action.indexOf('报工')>=0 || l.action.indexOf('过账')>=0);
+    nodes.push({t:l.dept + ' · ' + l.action, d:l.created_at, who:l.dept, x:'', c: ab ? '#ea580c' : '#2563eb'});
+  });
+  if (pick.estHours) nodes.push({t:'定额基准', d:pick.createdAt, who:'系统',
+    x:'预估 ' + pick.estHours + 'h（95%CI ' + (pick.ciLow||'–') + '~' + (pick.ciHigh||'–') + 'h）· 置信度 ' + pick.confidence, c:'#2563eb'});
+  if (pick.actualHours != null) {
+    var dv = ((pick.actualHours - pick.estHours)/pick.estHours*100).toFixed(1);
+    nodes.push({t:'完工实际值', d:pick.completedAt, who:'车间管控端',
+      x:'实际 ' + pick.actualHours + 'h（偏差 ' + (dv>0?'+':'') + dv + '%）· 钢材 ' + (pick.actualSteel||'–') + 'kg · 余废料 ' + (pick.scrapRate||'–') + '%',
+      c: Math.abs(dv) > 15 ? '#dc2626' : '#16a34a'});
+  }
+
+  document.getElementById('traceBody').innerHTML = nodes.length ? nodes.map(function(n){
+    return '<div style="position:relative;margin-bottom:16px"><div style="position:absolute;left:-26px;top:2px;width:14px;height:14px;border-radius:50%;background:' + n.c +
+      ';border:3px solid #fff;box-shadow:0 0 0 2px ' + n.c + '"></div>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--gray-800)">' + n.t + '</div>' +
+      '<div style="font-size:11px;color:var(--gray-500);margin-top:2px">' + (n.d||'') + (n.who?' · ' + n.who:'') + '</div>' +
+      (n.x ? '<div style="font-size:11px;color:var(--gray-600);margin-top:2px">' + n.x + '</div>' : '') + '</div>';
+  }).join('') : '<div style="color:#9ca3af;font-size:12px">该工单暂无审计留痕</div>';
+}
+
+async function showRootCause(woId) {
+  var box = document.getElementById('rootcauseBox');
+  box.style.display = 'block';
+  box.scrollIntoView({behavior:'smooth', block:'center'});
+  box.innerHTML = '<div style="color:#6b7280;font-size:12.5px">🔎 正在基于相似工单群组做统计归因…</div>';
+  var d;
+  try {
+    var j = await (await fetch('/api/analysis/rootcause/' + woId)).json();
+    if (j.code !== 0) throw new Error(j.message);
+    d = j.data;
+  } catch(e) {
+    box.innerHTML = '<div style="color:#dc2626;font-size:12.5px">分析失败：' + e.message + '</div>';
+    return;
+  }
+  var vColor = d.verdict === '个别异常' ? '#dc2626' : (d.verdict === '系统性偏差' ? '#ea580c' : '#16a34a');
+  var dimRows = d.dimensions.map(function(x){
+    var c = x.status === 'alert' ? '#dc2626' : (x.status === 'warn' ? '#ea580c' : '#16a34a');
+    return '<tr><td>' + x.dimension + '</td><td style="color:' + c + ';font-weight:700">' + (x.value>0?'+':'') + x.value + x.unit +
+      '</td><td>' + x.threshold + x.unit + '</td><td style="color:' + c + '">' +
+      (x.status==='normal'?'正常':(x.status==='warn'?'预警':'超限')) + '</td>' +
+      '<td style="font-size:11px;color:var(--gray-500)">' + (x.desc||'') + '</td></tr>';
+  }).join('');
+
+  box.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' +
+      '<div><div style="font-size:14px;font-weight:800;color:var(--gray-800)">🔎 智能根因分析 · ' + woId + '</div>' +
+      '<div style="font-size:11.5px;color:var(--gray-500);margin-top:3px">' + (d.component||'') + ' · ' + (d.material||'') +
+      ' · ' + d.weight + 'kg · 生成于 ' + d.generated_at + '</div></div>' +
+      '<button class="btn-sm" onclick="document.getElementById(\'rootcauseBox\').style.display=\'none\'">收起</button>' +
+    '</div>' +
+
+    '<div style="background:' + vColor + '14;border-left:4px solid ' + vColor + ';padding:12px 14px;border-radius:6px;margin-bottom:14px">' +
+      '<div style="font-size:13px;font-weight:800;color:' + vColor + '">判定：' + d.verdict + '</div>' +
+      '<div style="font-size:12px;color:var(--gray-700);margin-top:6px;line-height:1.8">' + d.findings.join('<br>') + '</div>' +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">' +
+      '<div style="background:var(--gray-50);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--gray-500)">本工单偏差</div>' +
+        '<div style="font-size:16px;font-weight:800;color:' + vColor + '">' + (d.my_deviation>0?'+':'') + d.my_deviation + '%</div></div>' +
+      '<div style="background:var(--gray-50);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--gray-500)">参照组均值（' + d.group_size + '个）</div>' +
+        '<div style="font-size:16px;font-weight:800">' + (d.group_avg>0?'+':'') + d.group_avg + '%</div></div>' +
+      '<div style="background:var(--gray-50);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--gray-500)">参照组标准差</div>' +
+        '<div style="font-size:16px;font-weight:800">' + d.group_std + '%</div></div>' +
+      '<div style="background:var(--gray-50);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--gray-500)">偏离度 z-score</div>' +
+        '<div style="font-size:16px;font-weight:800">' + d.z_score + '</div></div>' +
+    '</div>' +
+
+    '<div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">参照组：' + d.group_desc + '</div>' +
+
+    '<table class="role-table" style="margin-bottom:14px"><thead><tr><th>维度</th><th>偏差</th><th>预警阈值</th><th>状态</th><th>口径</th></tr></thead>' +
+    '<tbody>' + dimRows + '</tbody></table>' +
+
+    '<div style="background:#f0f7ff;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#1e3a5f;line-height:1.9">' +
+      '<strong>处置建议：</strong><br>' + d.suggestions.map(function(s){return '· ' + s;}).join('<br>') +
+    '</div>' +
+
+    (d.model_feedback ?
+      '<div style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;padding:12px 14px;margin-top:12px;font-size:12.5px;color:#78350f;line-height:1.8">' +
+      '<strong>数据飞轮反馈：</strong>' + d.model_feedback.message + '</div>' : '') +
+
+    '<div style="font-size:11px;color:var(--gray-400);margin-top:10px">分析方法：' + d.method + '</div>';
+}
+
+async function closeRisk(id) {
+  try {
+    await fetch('/api/risk-alerts/' + id + '/close', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}'});
+    if (window.ApiSync) await ApiSync.syncAll();
+    showToast('✅ 风险已闭环', 'success');
+    renderAudit();
+  } catch(e) { showToast('闭环失败：' + e.message, 'error'); }
+}
+
+renderAudit();
+</script>
+</body>
+</html>
