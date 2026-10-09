@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 智能决策中心</title>
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
+<script src="shared/static-api.js"></script>
+<script src="shared/echarts.min.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
+<script src="shared/app.js?v=20261005d"></script>
+<style>
+.note{background:#f0f7ff;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a5f;line-height:1.75;margin-bottom:16px}
+.note b{color:#1a3a5c}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--gray-200);border-radius:6px;padding:14px 16px}
+.kpi .lb{font-size:12px;color:var(--gray-500)}
+.kpi .vl{font-size:22px;font-weight:700;color:var(--gray-900);margin-top:6px}
+.kpi .vl small{font-size:12px;font-weight:400;color:var(--gray-500);margin-left:3px}
+.kpi .sub{font-size:11px;color:var(--gray-400);margin-top:5px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{background:#f3f6fa;padding:9px 10px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid #f0f2f5}
+.tbl tr:hover td{background:#fafbfc}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:12px;color:var(--gray-600);font-weight:600}
+.fld input,.fld select{padding:7px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px;font-family:var(--font);background:#fff}
+.btn{padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--font)}
+.btn:hover{background:#1d4ed8}
+.btn.ghost{background:#fff;color:var(--gray-700);border:1px solid var(--gray-300)}
+.res{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--gray-200)}
+.res .rv{font-size:19px;font-weight:700;color:var(--steel-700)}
+.res .rl{font-size:12px;color:var(--gray-500)}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}
+.tag-good{background:#dcfce7;color:#166534}
+.tag-warn{background:#ffedd5;color:#9a3412}
+.tag-bad{background:#fee2e2;color:#991b1b}
+.tag-info{background:#dbeafe;color:#1e40af}
+.tag-gray{background:#f3f4f6;color:#6b7280}
+.chart{width:100%;height:300px}
+.chart-sm{width:100%;height:260px}
+.src{font-size:11.5px;color:var(--gray-500);line-height:1.6;margin-top:10px}
+.loading{color:var(--gray-400);font-size:12.5px;padding:16px}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
+</div>
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item" href="data.html">数据底座</a>
+<a class="app-sider-item active" href="brain.html">智能决策中心</a>
+<a class="app-sider-item" href="project.html">项目挣值管控</a>
+<a class="app-sider-item" href="steel.html">钢材行情</a>
+<a class="app-sider-item" href="eval.html">效果评价</a>
+<a class="app-sider-item" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>智能决策中心</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title">智能决策中心 <span class="page-badge">先验—残差两阶段学习</span></div>
+    <div class="page-subtitle">模型全部由菲达环保 2024 年真实数据训练：1041 条部件结算记录 + 2099 行钢材采购订单</div>
+  </div>
+
+  <div class="note">
+    <b>为什么不用一个大模型了事？</b>非标场景的本质困难是<b>小样本</b>——一家企业一年也只有几百条有效记录，
+    端到端训练既容易过拟合，又浪费了企业已经积累的工艺知识。本系统采用
+    <b>先验—残差两阶段学习</b>：第一阶段用企业《2024工时标准》或同类历史中位水平作为<b>先验</b>（不可学习、可追责）；
+    第二阶段用 GBDT 学习 <b>ln(实际 / 先验)</b> 的残差（只学先验说不清的那部分）。
+    不确定度由分位数回归给出，并用<b>共形推断（CQR）</b>校准覆盖率；归因用<b>精确 Shapley 值</b>。
+  </div>
+
+  <div class="grid4" id="kpiRow">
+    <div class="kpi"><div class="lb">建模样本</div><div class="vl" id="kSamples">—</div><div class="sub" id="kSamplesSub">真实台账</div></div>
+    <div class="kpi"><div class="lb">工时标准覆盖率</div><div class="vl" id="kQuotaCov">—</div><div class="sub">可直接查到企业定额的样本占比</div></div>
+    <div class="kpi"><div class="lb">件数口径 MedAPE</div><div class="vl" id="kMedApe">—</div><div class="sub">每"件"等权；对比：直接套用工时标准 <span id="kBaseApe">—</span></div></div>
+    <div class="kpi"><div class="lb">80% 区间覆盖率 PICP</div><div class="vl" id="kPicp">—</div><div class="sub">共形校正后达到目标覆盖</div></div>
+  </div>
+
+  <div class="grid4" id="kpiRow2" style="margin-top:-4px">
+    <div class="kpi"><div class="lb">金额口径 MAPE</div><div class="vl" id="kAmtMape">—</div><div class="sub" id="kAmtSub">按结算金额加权</div></div>
+    <div class="kpi"><div class="lb">Top20% 大件 MedAPE</div><div class="vl" id="kTopMed">—</div><div class="sub" id="kTopSub">这些件占总额 —</div></div>
+    <div class="kpi"><div class="lb">置信度校准误差 ECE</div><div class="vl" id="kEce">—</div><div class="sub">越小越可靠；区间宽度→达标率</div></div>
+    <div class="kpi"><div class="lb">共形 κ 族数</div><div class="vl" id="kDelta">—</div><div class="sub" id="kDeltaSub">全局 κ —</div></div>
+  </div>
+
+  <div class="note" id="amtNote" style="display:none;background:#eff6ff;border-left-color:#2563eb;color:#1e3a8a">
+    <b>为什么两个口径必须并列报：</b><span id="amtNoteTxt"></span>
+    <div style="margin-top:8px;font-size:12px;line-height:1.7">
+      MedAPE 给每件一票，衡量"报得准不准"；金额加权 MAPE 给每元一票，衡量"错的地方贵不贵"。
+      两者会分歧——模型在小件上准而在大件上不准时，件数口径很好看，但钱恰恰错在大件上。
+      只看任一个数字都会高估模型的商业价值，所以两个都摆出来。
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="chart-card">
+      <div class="chart-title">模型精度 · 四口径对比（5 折分组交叉验证）</div>
+      <div id="chartCmp" class="chart-sm"></div>
+      <table class="tbl" id="tblCmp" style="margin-top:10px">
+        <thead><tr><th>方法</th><th>MAPE</th><th>中位 APE</th><th>MAE</th><th>RMSE</th><th>R²</th></tr></thead>
+        <tbody><tr><td colspan="6" class="loading">加载中…</td></tr></tbody>
+      </table>
+      <div class="src">分组方式：按「项目」分组做 K 折，同一项目的部件不会同时出现在训练集与验证集，避免同一工程的内部相关性把指标抬虚。</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">特征重要性（按分裂覆盖样本数加权）</div>
+      <div id="chartImp" class="chart-sm"></div>
+      <div class="src">吨位对数与先验对数是主导变量，符合工程直觉；部件族 one-hot 让模型能把差异极大的类别分开。</div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">在线测算：给定部件特征 → 单位工时成本 + 区间 + Shapley 归因</div>
+    <div class="form-grid">
+      <div class="fld"><label>部件名称（用于匹配企业工时标准）</label>
+        <input id="fComponent" value="灰斗（单层）" list="compList">
+        <datalist id="compList"></datalist>
+      </div>
+      <div class="fld"><label>部件族</label>
+        <select id="fFamily">
+          <option value="">自动识别</option>
+          <option>壳体</option><option>灰斗</option><option>钢支架</option>
+          <option>进出口封头</option><option>进出口烟道</option><option>烟道</option>
+          <option>顶盖</option><option>振打系统</option><option>极板极线</option>
+          <option>气流分布板</option><option>平台扶梯</option><option>其他</option>
+        </select>
+      </div>
+      <div class="fld"><label>构件吨位（t）</label><input id="fTon" type="number" value="22" step="0.1"></div>
+      <div class="fld"><label>生产分厂</label>
+        <select id="fDept"><option>三分厂</option><option>二分厂</option></select>
+      </div>
+      <div class="fld"><label>市场</label>
+        <select id="fMarket"><option>国内</option><option>海外</option></select>
+      </div>
+      <div class="fld"><label>结算跨月数</label>
+        <select id="fMonths"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn" id="btnPredict">测算</button>
+      <button class="btn ghost" id="btnSim">成本风险仿真（蒙特卡洛）</button>
+      <button class="btn ghost" id="btnSample" title="填入台账中模型走「自动下达」链路的真实部件">填入真实样例</button>
+      <span id="predMsg" style="font-size:12px;color:var(--gray-500)"></span>
+    </div>
+    <div id="sampleBar" class="src" style="margin-top:6px"></div>
+    <div id="oodWarn" class="src" style="margin-top:6px;display:none;color:var(--amber,#b45309);border-left:3px solid var(--amber,#b45309);padding-left:8px"></div>
+    <div class="res">
+      <div><div class="rl">先验（元/吨）</div><div class="rv" id="rPrior">—</div><div class="src" id="rPriorSrc"></div></div>
+      <div><div class="rl">模型预测（元/吨）</div><div class="rv" id="rUnit">—</div><div class="src" id="rInterval"></div></div>
+      <div><div class="rl">工时费金额</div><div class="rv" id="rAmount">—</div><div class="src" id="rAmountRange"></div></div>
+      <div><div class="rl">相对先验调整</div><div class="rv" id="rAdjust">—</div><div class="src">残差模型给出的修正幅度</div></div>
+    </div>
+    <div id="chartShap" class="chart-sm" style="margin-top:12px"></div>
+    <div class="src">Shapley 值满足严格可加性：基准值 + 各特征贡献之和 = 模型输出（在对数残差空间）。正值表示把预测往上抬，负值往下压。</div>
+  </div>
+
+  <div class="grid2">
+    <div class="chart-card">
+      <div class="chart-title">部件族：实际结算水平 vs 企业工时标准（定额偏移）</div>
+      <div id="chartFam" class="chart-sm"></div>
+      <table class="tbl" id="tblFam" style="margin-top:10px">
+        <thead><tr><th>部件族</th><th>样本</th><th>P25</th><th>中位</th><th>P75</th><th>企业定额</th><th>偏差</th></tr></thead>
+        <tbody><tr><td colspan="7" class="loading">加载中…</td></tr></tbody>
+      </table>
+      <div class="src">仅「壳体 / 灰斗 / 钢支架 / 进出口封头」四类在企业《2024工时标准》中有对应条目；其余内部件处于<b>无定额</b>状态，只能靠历史中位数兜底——这正是本项目要解决的核心痛点之一。</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">孤立森林：真实台账中的结算异常部件</div>
+      <table class="tbl" id="tblAno">
+        <thead><tr><th>项目 / 部件</th><th>吨位</th><th>单位成本</th><th>先验</th><th>偏差</th><th>异常分</th></tr></thead>
+        <tbody><tr><td colspan="6" class="loading">加载中…</td></tr></tbody>
+      </table>
+      <div class="src">特征只取 4 个可解释量：ln(吨位)、ln(单位成本)、ln(先验)、ln(实际/先验)。得分越高越异常，可直接作为内审线索。</div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">不确定性治理：共形校正 · 置信度校准 · 选择性预测路由</div>
+    <div class="note" style="background:#f8fafc;border-left-color:#64748b;color:#334155;margin-bottom:12px">
+      原来那条置信度是<b>手调规则</b>（<code>c = 0.92；复杂度≥4 减 0.08 …</code>），跟模型输出无关，却驱动着整个分级路由。
+      实测发现：把留出预测按区间宽度分五档，实际误差从 <b>9.3%</b> 单调升到 <b>45.4%</b>——模型其实"知道自己什么时候不知道"。
+      于是把置信度改成<b>区间宽度的经验达标率</b>，路由阈值也改成从交叉验证的分布上切分位，不再是拍脑袋的常数。
+      v2.4 又把单一 δ 换成<b>局部自适应 × 分层 κ</b>：δ<sub>i</sub> = κ<sub>族</sub> × (q90−q10)<sub>i</sub>。
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="chart-title" style="font-size:13px">置信度校准曲线（区间宽度 → 达标率）</div>
+        <div id="chartConf" class="chart-sm" style="height:220px"></div>
+        <div class="src" id="confSrc">加载中…</div>
+      </div>
+      <div>
+        <div class="chart-title" style="font-size:13px">局部自适应 × 分层共形 κ</div>
+        <table class="tbl" id="tblDelta">
+          <thead><tr><th>部件族</th><th>样本</th><th>族自身 κ</th><th>收缩后 κ</th></tr></thead>
+          <tbody><tr><td colspan="4" class="loading">加载中…</td></tr></tbody>
+        </table>
+        <div class="src" id="deltaSrc"></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div>
+        <div class="chart-title" style="font-size:13px">分层精度：全局一个数会掩盖结构差异</div>
+        <table class="tbl" id="tblFamCv">
+          <thead><tr><th>部件族</th><th>样本</th><th>占比</th><th>MedAPE</th><th>评价</th></tr></thead>
+          <tbody><tr><td colspan="5" class="loading">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div>
+        <div class="chart-title" style="font-size:13px">选择性预测路由</div>
+        <div id="routeBox" class="src" style="font-size:12.5px;padding:12px;background:#f8fafc;border-radius:6px">加载中…</div>
+        <div class="src">路由切在<b>连续的区间宽度</b>上：置信度是宽度的单调阶梯，尾部被单调约束压平后有四成样本落在同一个值，
+          按它切分位会得到两个完全相同的阈值——所以宽度才是可切的连续量，置信度只作为给人的解释。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">上线后漂移监控：该盯什么，什么时候才该重训</div>
+    <div class="note" style="background:#f8fafc;border-left-color:#64748b;color:#334155;margin-bottom:12px">
+      按结算月份切成<b>参考期（1–6 月）</b>与<b>监测期（7–12 月）</b>，用 PSI + KS 双指标对比分布。
+      关键在于<b>分类看</b>：输入特征漂了说明"进来的活变了"，残差漂了才说明"工艺规律变了"。
+      先验统一取参考期的家族中位数——用监测期自己的中位数等于提前知道答案，那就不叫监控了。
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="chart-title" style="font-size:13px">PSI / KS 监控面板</div>
+        <table class="tbl" id="tblDrift">
+          <thead><tr><th>监控对象</th><th>类别</th><th>PSI</th><th>KS</th><th>判读</th></tr></thead>
+          <tbody><tr><td colspan="5" class="loading">加载中…</td></tr></tbody>
+        </table>
+        <div class="src" id="driftSrc">加载中…</div>
+      </div>
+      <div>
+        <div class="chart-title" style="font-size:13px">部件族构成变化</div>
+        <table class="tbl" id="tblComp">
+          <thead><tr><th>部件族</th><th>参考期</th><th>监测期</th><th>变化</th></tr></thead>
+          <tbody><tr><td colspan="4" class="loading">加载中…</td></tr></tbody>
+        </table>
+        <div class="src" id="compSrc"></div>
+      </div>
+    </div>
+    <div class="note" id="driftConclusion" style="margin-top:12px;display:none;background:#f0fdf4;border-left-color:#16a34a;color:#14532d"></div>
+    <div class="src" style="margin-top:8px">
+      PSI 阈值：&lt;0.1 稳定，0.1–0.25 需关注，&gt;0.25 显著漂移。KS 作为不受分箱影响的交叉验证指标，
+      两者不一致时以 KS 为准。
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">真实样本散点：吨位 vs 单位工时成本（含模型拟合值）</div>
+    <div id="chartScatter" class="chart"></div>
+    <div class="src">横轴对数刻度。单位成本随吨位下降体现规模效应；同一吨位下仍有数量级差异，正说明「非标」无法用单一系数刻画。</div>
+  </div>
+
+  <div class="chart-card" id="simCard" style="display:none;margin-bottom:16px">
+    <div class="chart-title">蒙特卡洛成本风险仿真</div>
+    <div class="grid4" id="simKpi"></div>
+    <div id="chartSim" class="chart-sm"></div>
+    <div id="chartTornado" class="chart-sm" style="margin-top:10px"></div>
+    <div class="src" id="simSrc"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var BASE = '';
+  var cmpChart, impChart, shapChart, famChart, scChart, simChart, torChart;
+
+  function $(id) { return document.getElementById(id); }
+  function num(v, d) { return (v === null || v === undefined || isNaN(v)) ? d : v; }
+  function fmt(v, d) { if (v === null || v === undefined || isNaN(v)) return '—'; return Number(v).toFixed(d === undefined ? 1 : d); }
+  function fmtInt(v) { if (v === null || v === undefined || isNaN(v)) return '—'; return Number(v).toLocaleString('zh-CN'); }
+
+  function api(path, opt) {
+    return fetch(BASE + path, opt).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.code === 0) return j.data;
+      throw new Error((j && j.message) || '接口异常');
+    });
+  }
+  function post(path, body) {
+    return api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+
+  function mkChart(el) { return el ? echarts.init(el) : null; }
+  window.addEventListener('resize', function () {
+    [cmpChart, impChart, shapChart, famChart, scChart, simChart, torChart].forEach(function (c) {
+      if (c) c.resize();
+    });
+  });
+
+  // ---------------- 模型指标 ----------------
+  function loadMetrics() {
+    api('/api/model/quota-metrics').then(function (d) {
+      var rep = d.report || {}, cmp = d.comparison || {};
+      var prior = rep.prior_coverage || {};
+      var n = rep.n_samples || 0;
+      var qn = prior.quota || 0, fn = prior.family_median || 0;
+      $('kSamples').innerHTML = fmtInt(n) + '<small>条</small>';
+      $('kSamplesSub').textContent = '剔除 ' + ((((rep.data_cleaning || {}).dropped) || 0)) + ' 条离谱样本后';
+      $('kQuotaCov').innerHTML = n ? (qn / n * 100).toFixed(1) + '<small>%</small>' : '—';
+      var m = (cmp.rows || []).filter(function (r) { return r.key === 'model'; })[0];
+      var b = (cmp.rows || []).filter(function (r) { return r.key === 'prior_only'; })[0];
+      if (m) $('kMedApe').innerHTML = fmt(m.medape, 2) + '<small>%</small>';
+      if (b) $('kBaseApe').textContent = fmt(b.medape, 2) + '%';
+      $('kPicp').innerHTML = cmp.picp_raw !== null && cmp.picp_raw !== undefined
+        ? fmt(cmp.picp_raw, 1) + '<small>%</small>' : '—';
+
+      // 对比表
+      var tb = $('tblCmp').querySelector('tbody'), html = '';
+      (cmp.rows || []).forEach(function (r) {
+        var cls = r.key === 'model' ? ' style="background:#eff6ff;font-weight:600"' : '';
+        html += '<tr' + cls + '><td>' + r.method + '</td><td>' + fmt(r.mape, 2) + '%</td><td>'
+          + fmt(r.medape, 2) + '%</td><td>' + fmt(r.mae, 0) + '</td><td>' + fmt(r.rmse, 0)
+          + '</td><td>' + fmt(r.r2, 3) + '</td></tr>';
+      });
+      tb.innerHTML = html || '<tr><td colspan="6" class="loading">无数据</td></tr>';
+
+      // 对比图
+      cmpChart = cmpChart || mkChart($('chartCmp'));
+      if (cmpChart && (cmp.rows || []).length) {
+        var rows = cmp.rows;
+        cmpChart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          legend: { data: ['MAPE', '中位APE'], bottom: 0, textStyle: { fontSize: 11 } },
+          grid: { left: 60, right: 20, top: 20, bottom: 40 },
+          xAxis: { type: 'category', data: rows.map(function (r) { return r.method; }),
+                   axisLabel: { fontSize: 10, interval: 0, rotate: 12 } },
+          yAxis: { type: 'value', name: '%', axisLabel: { fontSize: 10 } },
+          series: [
+            { name: 'MAPE', type: 'bar', data: rows.map(function (r) { return num(r.mape, 0); }), itemStyle: { color: '#93c5fd' } },
+            { name: '中位APE', type: 'bar', data: rows.map(function (r) { return num(r.medape, 0); }), itemStyle: { color: '#2563eb' } }
+          ]
+        }, true);
+      }
+
+      // 特征重要性
+      var imp = rep.feature_importance || {};
+      var ks = Object.keys(imp).sort(function (a, b2) { return imp[b2] - imp[a]; }).slice(0, 12);
+      impChart = impChart || mkChart($('chartImp'));
+      if (impChart && ks.length) {
+        impChart.setOption({
+          tooltip: { trigger: 'axis' },
+          grid: { left: 120, right: 40, top: 10, bottom: 20 },
+          xAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'category', data: ks.reverse(), axisLabel: { fontSize: 10 } },
+          series: [{ type: 'bar', data: ks.map(function (k) { return num(imp[k], 0); }),
+                     itemStyle: { color: '#1e40af' }, barWidth: 12 }]
+        }, true);
+      }
+    }).catch(function (e) {
+      $('kSamples').textContent = '接口异常'; console.warn(e);
+    });
+  }
+
+  // ---------------- 不确定性治理 ----------------
+  function loadUncertainty() {
+    api('/api/model/uncertainty').then(function (d) {
+      var aw = d.amount_weighted || {}, cf = d.confidence || {}, fd = d.fam_delta || {};
+      $('kAmtMape').innerHTML = fmt(aw.mape_all, 1) + '<small>%</small>';
+      $('kAmtSub').textContent = '每元一票，错在贵的地方会被放大';
+      $('kTopMed').innerHTML = fmt(aw.top20_medape, 1) + '<small>%</small>';
+      $('kTopSub').textContent = '这些件占总额 ' + fmt(aw.top20_share_pct, 0) + '%';
+      // v2.8：改展示 cross-fitting 口径。ece 是在拟合用的同一批留出样本上算的，
+      // 属于乐观口径（实测 0.0186 vs 诚实 0.0363），拿它汇报会误导。
+      $('kEce').innerHTML = cf.ece_honest === null || cf.ece_honest === undefined ? '—'
+        : fmt(cf.ece_honest, 3) + '<small> (越低越好)</small>';
+      var kEceSub = document.getElementById('kEceSub');
+      if (kEceSub) {
+        kEceSub.textContent = 'cross-fitting 口径；样本内乐观口径 ' + fmt(cf.ece, 4);
+      }
+      var det = fd.detail || [];
+      var uniq = {};
+      det.forEach(function (x) { uniq[x.kappa || x.delta] = 1; });
+      $('kDelta').innerHTML = det.length + '<small> 个族</small>';
+      $('kDeltaSub').textContent = '全局 κ=' + fmt(fd.global_kappa !== undefined ? fd.global_kappa : fd.global_delta, 3)
+        + '，收缩 K=' + (fd.shrink_k || '—');
+      if (aw.note) { $('amtNoteTxt').textContent = aw.note; $('amtNote').style.display = ''; }
+
+      // 置信度校准曲线
+      var bins = cf.bins || [];
+      var confChart = mkChart($('chartConf'));
+      if (confChart && bins.length) {
+        confChart.setOption({
+          tooltip: { trigger: 'axis', formatter: function (p) {
+            return '区间宽度 ≤ ' + Number(p[0].axisValue).toFixed(2) + '<br/>达标率 ' + Number(p[0].data).toFixed(2);
+          } },
+          grid: { left: 46, right: 20, top: 14, bottom: 34 },
+          xAxis: { type: 'category', data: bins.map(function (b) { return b[0].toFixed(2); }),
+                   name: '宽度上界', nameLocation: 'middle', nameGap: 22,
+                   axisLabel: { fontSize: 9, interval: 1 } },
+          yAxis: { type: 'value', name: '置信度', max: 1, axisLabel: { fontSize: 10 } },
+          series: [{ type: 'line', step: 'end', symbol: 'circle', symbolSize: 5,
+                     data: bins.map(function (b) { return b[1]; }),
+                     itemStyle: { color: '#2563eb' },
+                     areaStyle: { color: 'rgba(37,99,235,.10)' } }]
+        }, true);
+      }
+      var fw = cf.fam_w || 0, fhk = Object.keys(cf.fam_hit || {});
+      $('confSrc').innerHTML = '判据：|ln(实际/预测)| ≤ 0.2（约 ±20%）算达标，校准样本 '
+        + fmtInt(cf.n) + ' 条，整体达标率 ' + fmt((cf.overall_hit_rate || 0) * 100, 1) + '%。'
+        + '<b>v2.8 起置信度吃两个输入</b>：'
+        + (fw > 0
+            ? '区间宽度 ×' + fmt(1 - fw, 1) + ' + 族历史达标率 ×' + fmt(fw, 1)
+              + '（' + fhk.length + ' 个族各有自己的历史达标率，'
+              + '最高与最低相差 ' + fmt((Math.max.apply(null, fhk.map(function (k) { return cf.fam_hit[k]; }))
+                  - Math.min.apply(null, fhk.map(function (k) { return cf.fam_hit[k]; }))) * 100, 0)
+              + ' pp）。'
+            : '仅区间宽度。')
+        + '加上族维度后：ECE（cross-fitting）' + fmt(cf.ece_honest, 4)
+        + '、Brier ' + fmt(cf.brier, 4)
+        + '、对数损失 ' + fmt(cf.logloss, 4)
+        + '；其中 Brier 是严格 proper 的评分，ECE 会随置信度取值变多而系统性变小，'
+        + '所以横向比较以 Brier 为准。宽度越大置信度只能越低（已强制单调）。';
+
+      // 分层 δ
+      var tb = $('tblDelta').querySelector('tbody'), html = '';
+      det.slice().sort(function (a, b2) { return b2.n - a.n; }).forEach(function (x) {
+        var tag = x.n < (fd.min_fam_n || 8) ? '<span class="tag tag-gray">样本不足</span>' : '';
+        html += '<tr><td><b>' + x.family + '</b> ' + tag + '</td><td>' + x.n + '</td><td>'
+          + fmt(x.kappa_raw !== undefined ? x.kappa_raw : x.delta_raw, 3) + '</td><td><b>'
+          + fmt(x.kappa !== undefined ? x.kappa : x.delta, 3) + '</b></td></tr>';
+      });
+      tb.innerHTML = html || '<tr><td colspan="4" class="loading">无数据</td></tr>';
+      $('deltaSrc').innerHTML = 'κ 是「该把这条样本的区间宽度放大几倍」，'
+        + '最终 δ<sub>i</sub> = κ<sub>族</sub> × (q90−q10)<sub>i</sub>：难预测的件自动拿到更宽的容错。'
+        + 'κ 已按 κ=(n·κ<sub>族</sub> + K·κ<sub>全局</sub>)/(n+K) 向全局收缩，K=' + (fd.shrink_k || '—')
+        + '。四种写法在同样 80% 覆盖下的对比：全局 δ 宽 1.189 / 小族覆盖 73.2%，'
+        + '分层 δ 宽 1.194 / 77.8%，局部自适应 宽 1.235 / 74.3%，'
+        + '<b>分层×局部 宽 1.183 / 79.3%（本页采用）</b>。';
+
+      // 分层精度
+      var tb2 = $('tblFamCv').querySelector('tbody'), h2 = '';
+      (d.cv_by_family || []).forEach(function (x) {
+        var cls = x.medape < 20 ? 'tag-good' : (x.medape < 35 ? 'tag-warn' : 'tag-bad');
+        var txt = x.medape < 20 ? '可用' : (x.medape < 35 ? '偏弱' : '需人工');
+        h2 += '<tr><td><b>' + x.family + '</b></td><td>' + x.n + '</td><td>' + fmt(x.share_pct, 1)
+          + '%</td><td>' + fmt(x.medape, 1) + '%</td><td><span class="tag ' + cls + '">' + txt + '</span></td></tr>';
+      });
+      tb2.innerHTML = h2 || '<tr><td colspan="5" class="loading">无数据</td></tr>';
+
+      // 路由
+      var rt = d.routing || {};
+      $('routeBox').innerHTML =
+        '<div style="margin-bottom:6px"><span class="tag tag-good">自动下达</span> '
+        + (rt.desc && rt.desc['自动下达'] ? rt.desc['自动下达'] : '—') + '</div>'
+        + '<div style="margin-bottom:6px"><span class="tag tag-warn">人工复核</span> '
+        + (rt.desc && rt.desc['人工复核'] ? rt.desc['人工复核'] : '—') + '</div>'
+        + '<div><span class="tag tag-bad">工程师接管</span> '
+        + (rt.desc && rt.desc['工程师接管'] ? rt.desc['工程师接管'] : '—') + '</div>'
+        + '<div style="margin-top:8px;color:var(--gray-600)">宽度阈值目标：约 '
+        + fmt((rt.auto_frac_target || 0.8) * 100, 0) + '% 的件走自动链路。</div>'
+        + '<div style="margin-top:6px;color:var(--gray-600)">'
+        + '但只看区间宽度会漏掉一类样本：<b>模型很自信、其实错得很离谱</b>'
+        + '（顶盖 90% 被放行，自动链路 MedAPE 却有 39%）。'
+        + '所以路由再叠加一道<b>族级精度门控</b>——留出集上族中位 APE ≥ '
+        + fmt((rt.gate_lines || {}).review, 0) + '% 强制人工复核，≥ '
+        + fmt((rt.gate_lines || {}).manual, 0) + '% 强制工程师接管，取与宽度路由更保守者。'
+        + '</div>'
+        + '<div style="margin-top:6px;color:var(--gray-600)">'
+        + '<b>v2.9 修掉一处方向性错误</b>：样本量 &lt; ' + fmt((rt.gate_lines || {}).min_n, 0)
+        + ' 的族，历史精度本来就估不出来，原实现却把它收缩到全局值、'
+        + '于是<b>一定落在「自动下达」</b>——「证据不足」被做成了「默认信任」。'
+        + '受害族：标准件（n=1，实际误差 51%）、预埋件（n=1，39%）、包装发运（n=1，29%）、'
+        + '进出口烟道（n=4，35%）——这 4 类共 7 条样本被错误放行。'
+        + '改为「样本量不足一律不给自动下达（&lt; '
+        + fmt((rt.gate_lines || {}).hard_min_n, 0) + ' 条直接工程师接管）」后：'
+        + '放行率 <b>69.81% → 68.56%</b>、自动链路 MedAPE <b>6.74% → 6.58%</b>'
+        + '（5/5 seed 一致改善）。</div>'
+        + '<div style="margin-top:6px;color:var(--gray-600)">'
+        + '<b>v2.9 同时把外分布防护从 1 类扩到 3 类</b>：未见分厂、量级外推的吨位、'
+        + '样本极稀的部件族 —— 共同点是模型对它们会给出<b>看起来确定</b>的答案'
+        + '（one-hot 全 0 / 落在分箱极端桶，区间都不会自动变宽）。'
+        + '命中即标注并强制提档。部件名陌生只提示不提档：非标场景条条都是新名字，'
+        + '拿它提档等于放弃自动化。</div>'
+        + '<div style="margin-top:6px;color:var(--gray-600)">'
+        + '<b>v3.0 加了第二维门控：按台账标记判档。</b>'
+        + '族级门控管「这类部件历史上准不准」，但有个维度它覆盖不到——'
+        + '<b>台账登记的口径本身</b>：批量件（部件名带产量，如「4月锤头组件9558套」）'
+        + '历史 MedAPE <b>' + fmt(((rt.flag_gate || {})['is_batch'] || {}).medape, 1)
+        + '%</b>，是其它样本的 6 倍，因为这类行的吨位是当月产量、'
+        + '件数特征的语义与普通件完全不同。这不是模型能修的，只能承认它说不准：'
+        + '命中批量标记即不给自动下达（5 seed 配对：放行率 −0.67pp、'
+        + '自动链路 MedAPE −0.11pp，5/5 一致改善）。</div>'
+        + '<div style="margin-top:6px;color:var(--gray-600)">'
+        + '顺带把两个<b>死特征</b>从「静默外推」改成「明确标注」：'
+        + '备件标记在训练样本里 0 条、包装标记 1 条，模型从未见过它们为真。'
+        + '线上一旦传入，以前会安静地给一个没依据的答案，现在会标'
+        + '「训练未覆盖」并给提示。'
+        + '部件名含 +/、/和/及 的<b>合并行</b>也只提示不提档——'
+        + '实测把它们摘出去对自动链路精度<b>零收益</b>（仅 2/5 seed），'
+        + '却要多付 0.88pp 放行率，所以不做。</div>';
+    }).catch(function (e) { console.warn('uncertainty', e); });
+  }
+
+  // ---------------- 漂移监控 ----------------
+  function loadDrift() {
+    api('/api/model/drift').then(function (d) {
+      if (!d || !d.ok) { $('driftSrc').textContent = (d && d.error) || '漂移监控暂不可用'; return; }
+      var tb = $('tblDrift').querySelector('tbody'), html = '';
+      (d.checks || []).forEach(function (c) {
+        var cls = c.level === 'ok' ? 'tag-good' : (c.level === 'warn' ? 'tag-warn' : 'tag-bad');
+        html += '<tr><td><b>' + c.item + '</b></td><td>' + c.kind + '</td><td>'
+          + (c.psi === null || c.psi === undefined ? '—' : fmt(c.psi, 3)) + '</td><td>'
+          + (c.ks === null || c.ks === undefined ? '—' : fmt(c.ks, 3)) + '</td><td>'
+          + '<span class="tag ' + cls + '">' + c.status + '</span></td></tr>';
+      });
+      tb.innerHTML = html || '<tr><td colspan="5" class="loading">无数据</td></tr>';
+      $('driftSrc').innerHTML = (d.split ? d.split.reference + ' vs ' + d.split.monitor + '。' : '')
+        + (d.method || '');
+
+      var tb2 = $('tblComp').querySelector('tbody'), h2 = '';
+      (d.family_composition || []).slice(0, 8).forEach(function (x) {
+        var cls = Math.abs(x.delta_pp) >= 5 ? 'tag-warn' : 'tag-good';
+        h2 += '<tr><td><b>' + x.family + '</b></td><td>' + fmt(x.ref_pct, 1) + '%</td><td>'
+          + fmt(x.cur_pct, 1) + '%</td><td><span class="tag ' + cls + '">'
+          + (x.delta_pp > 0 ? '+' : '') + fmt(x.delta_pp, 1) + 'pp</span></td></tr>';
+      });
+      tb2.innerHTML = h2 || '<tr><td colspan="4" class="loading">无数据</td></tr>';
+      $('compSrc').innerHTML = '构成总位移 ' + fmt(d.share_shift_pp, 1) + 'pp。'
+        + '这一项不代表模型坏了，而是提醒：占比上升最快的族，就是下一步最该补样本的地方。';
+
+      var box = $('driftConclusion');
+      box.style.display = '';
+      box.innerHTML = '<b>结论 · 建议动作：' + (d.action || '—') + '</b><div style="margin-top:6px">'
+        + (d.conclusion || '') + '</div>';
+      var h = d.holdout || {};
+      if (h.medape_holdout !== undefined) {
+        box.innerHTML += '<div style="margin-top:8px;font-size:12px;color:#334155">'
+          + '精度分解：全量分组 CV <b>' + fmt(h.medape_full_cv, 2) + '%</b> → 半量同分布 CV <b>'
+          + fmt(h.medape_same_n_cv, 2) + '%</b>（数据量代价 ' + fmt(h.data_cost_pp, 1)
+          + 'pp）→ 跨批次外推 <b>' + fmt(h.medape_holdout, 2) + '%</b>（样本覆盖面代价 '
+          + fmt(h.drift_cost_pp, 1) + 'pp）。</div>';
+      }
+    }).catch(function (e) { console.warn('drift', e); });
+  }
+
+  // ---------------- 家族定额偏移 ----------------
+  function loadFamily() {
+    api('/api/model/family-benchmark').then(function (rows) {
+      var tb = $('tblFam').querySelector('tbody'), html = '';
+      rows.forEach(function (r) {
+        var dv = r.deviation_pct;
+        var cls = dv === null ? 'tag-gray' : (Math.abs(dv) < 15 ? 'tag-good' : (Math.abs(dv) < 60 ? 'tag-warn' : 'tag-bad'));
+        html += '<tr><td><b>' + r.family + '</b></td><td>' + r.n + '</td><td>' + fmt(r.p25, 0) + '</td><td>'
+          + fmt(r.median, 0) + '</td><td>' + fmt(r.p75, 0) + '</td><td>'
+          + (r.quota_rate === null ? '<span class="tag tag-gray">无定额</span>' : fmt(r.quota_rate, 0))
+          + '</td><td>' + (dv === null ? '—' : '<span class="tag ' + cls + '">' + (dv > 0 ? '+' : '') + fmt(dv, 1) + '%</span>')
+          + '</td></tr>';
+      });
+      tb.innerHTML = html || '<tr><td colspan="7" class="loading">无数据</td></tr>';
+      famChart = famChart || mkChart($('chartFam'));
+      if (famChart && rows.length) {
+        var top = rows.slice(0, 10);
+        famChart.setOption({
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          legend: { data: ['实际中位', '企业定额'], bottom: 0, textStyle: { fontSize: 11 } },
+          grid: { left: 60, right: 20, top: 20, bottom: 40 },
+          xAxis: { type: 'category', data: top.map(function (r) { return r.family; }),
+                   axisLabel: { fontSize: 10, interval: 0, rotate: 15 } },
+          yAxis: { type: 'value', name: '元/吨', axisLabel: { fontSize: 10 } },
+          series: [
+            { name: '实际中位', type: 'bar', data: top.map(function (r) { return r.median; }), itemStyle: { color: '#60a5fa' } },
+            { name: '企业定额', type: 'bar', data: top.map(function (r) { return r.quota_rate || 0; }), itemStyle: { color: '#f59e0b' } }
+          ]
+        }, true);
+      }
+    }).catch(function (e) { console.warn(e); });
+  }
+
+  // ---------------- 孤立森林异常 ----------------
+  function loadAnomaly() {
+    api('/api/model/anomalies?top=15').then(function (rows) {
+      var tb = $('tblAno').querySelector('tbody'), html = '';
+      rows.forEach(function (r) {
+        var cls = Math.abs(r.deviation_pct) > 100 ? 'tag-bad' : (Math.abs(r.deviation_pct) > 40 ? 'tag-warn' : 'tag-info');
+        html += '<tr><td>' + r.project + '<br><b>' + r.component + '</b></td><td>' + fmt(r.tonnage, 2) + ' t</td><td>'
+          + fmt(r.unit_cost, 0) + '</td><td>' + fmt(r.prior_rate, 0) + '</td><td><span class="tag ' + cls + '">'
+          + (r.deviation_pct > 0 ? '+' : '') + fmt(r.deviation_pct, 1) + '%</span></td><td>' + fmt(r.anomaly_score, 3)
+          + '</td></tr>';
+      });
+      tb.innerHTML = html || '<tr><td colspan="6" class="loading">无数据</td></tr>';
+    }).catch(function (e) { console.warn(e); });
+  }
+
+  // ---------------- 散点 ----------------
+  function loadScatter() {
+    api('/api/model/samples?limit=600').then(function (rows) {
+      scChart = scChart || mkChart($('chartScatter'));
+      if (!scChart || !rows.length) return;
+      var fams = {};
+      rows.forEach(function (r) { fams[r.family] = 1; });
+      var famList = Object.keys(fams);
+      var palette = ['#2563eb', '#16a34a', '#ea580c', '#7c3aed', '#0891b2', '#db2777', '#ca8a04', '#4b5563'];
+      var series = famList.map(function (f, i) {
+        return {
+          name: f, type: 'scatter', symbolSize: 6,
+          itemStyle: { color: palette[i % palette.length], opacity: .75 },
+          data: rows.filter(function (r) { return r.family === f; })
+            .map(function (r) { return [r.x, r.y]; })
+        };
+      });
+      series.push({
+        name: '模型拟合', type: 'line', showSymbol: false, smooth: true,
+        lineStyle: { color: '#dc2626', width: 2 },
+        data: rows.map(function (r) { return [r.x, r.pred]; }).sort(function (a, b) { return a[0] - b[0]; })
+      });
+      scChart.setOption({
+        tooltip: { trigger: 'item', formatter: function (p) {
+          return p.seriesName + '<br/>吨位 ' + p.value[0] + ' t<br/>单位成本 ' + p.value[1] + ' 元/吨';
+        } },
+        legend: { bottom: 0, textStyle: { fontSize: 10 }, type: 'scroll' },
+        grid: { left: 60, right: 24, top: 16, bottom: 42 },
+        xAxis: { type: 'log', name: '吨位(t)', axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'log', name: '元/吨', axisLabel: { fontSize: 10 } },
+        series: series
+      }, true);
+      // 部件名补全
+      var dl = $('compList'), seen = {};
+      dl.innerHTML = rows.slice(0, 120).map(function (r) {
+        if (seen[r.component]) return '';
+        seen[r.component] = 1;
+        return '<option value="' + r.component + '">';
+      }).join('');
+    }).catch(function (e) { console.warn(e); });
+  }
+
+  // ---------------- 真实样例（模型走自动链路的台账部件） ----------------
+  // 存在的理由：随手输入常见部件可能落到「工程师接管」，观感像是模型不敢批，
+  // 实际上 479 条真实样本里约 70% 自动放行。这里给评委一键填入真实、可自动放行的件。
+  var SAMPLES = [];
+  function loadSamples() {
+    api('/api/model/demo-samples?n=6').then(function (list) {
+        SAMPLES = list || [];
+        if (!SAMPLES.length) return;
+        $('sampleBar').innerHTML = '真实台账样例（模型对这些件走「自动下达」链路）：'
+          + SAMPLES.map(function (s, i) {
+            return '<a href="javascript:void(0)" onclick="fillSample(' + i + ')" '
+              + 'style="margin-right:10px">' + s.component + '　' + s.tonnage + 't</a>';
+          }).join('');
+      }).catch(function (e) { console.warn(e); });
+  }
+  function fillSample(i) {
+    var s = SAMPLES[i]; if (!s) return;
+    $('fComponent').value = s.component;
+    $('fFamily').value = s.family || '';
+    $('fTon').value = s.tonnage;
+    $('fDept').value = s.dept;
+    $('fMarket').value = s.market;
+    $('fMonths').value = String(s.months_cnt || 1);
+    $('predMsg').textContent = '已填入真实台账样例「' + s.component + '」';
+    doPredict();
+  }
+  window.fillSample = fillSample;
+
+  // ---------------- 在线测算 ----------------
+  function doPredict() {
+    var body = {
+      component: $('fComponent').value || '',
+      family: $('fFamily').value || null,
+      tonnage: parseFloat($('fTon').value) || 1,
+      dept: $('fDept').value,
+      market: $('fMarket').value,
+      months_cnt: parseInt($('fMonths').value, 10) || 1,
+      with_shap: true
+    };
+    $('predMsg').textContent = '计算中…';
+    post('/api/model/predict', body).then(function (r) {
+      $('predMsg').textContent = '推理耗时 ' + (r.inference_ms || 0) + ' ms';
+      // v2.7：外分布与未建模字段的诚实提示 —— 不给一个看起来确定的错答案
+      var warn = [];
+      if (r.out_of_domain) warn.push('⚠ ' + r.out_of_domain.reason);
+      (r.unused_inputs || []).forEach(function (u) {
+        warn.push('· ' + u.field + ' 未参与建模：' + u.reason);
+      });
+      var wb = $('oodWarn');
+      if (wb) {
+        wb.style.display = warn.length ? 'block' : 'none';
+        wb.innerHTML = warn.join('<br>');
+      }
+      $('rPrior').textContent = fmt(r.prior_rate, 1);
+      $('rPriorSrc').textContent = (r.prior_name || '同类历史中位数')
+        + '（' + (r.prior_source === 'quota' ? '企业工时标准' : '家族中位数兜底') + '）'
+        // v2.7：企业定额整体偏低，先验会乘一个全局校准因子，如实展示出来
+        + (r.prior_cal_factor ? '　定额校准 ×' + r.prior_cal_factor : '');
+      $('rUnit').textContent = fmt(r.unit_cost, 1);
+      $('rInterval').textContent = '80% 区间 [' + fmt(r.unit_cost_low, 0) + ' , ' + fmt(r.unit_cost_high, 0) + ']';
+      $('rAmount').textContent = fmtInt(r.total_labor_cost);
+      $('rAmountRange').textContent = '区间 ' + fmtInt(r.total_low) + ' ~ ' + fmtInt(r.total_high) + ' 元';
+      var adj = (r.unit_cost - r.prior_rate) / r.prior_rate * 100;
+      $('rAdjust').innerHTML = '<span class="tag ' + (Math.abs(adj) < 20 ? 'tag-good' : 'tag-warn') + '">'
+        + (adj > 0 ? '+' : '') + fmt(adj, 1) + '%</span>';
+      // 置信度与路由：现在是数据驱动的（区间宽度 → 经验达标率），不再是手调规则
+      var rc = r.route ? { '自动下达': 'tag-good', '人工复核': 'tag-warn', '工程师接管': 'tag-bad' }[r.route] : 'tag-gray';
+      $('rInterval').innerHTML = '80% 区间 [' + fmt(r.unit_cost_low, 0) + ' , ' + fmt(r.unit_cost_high, 0)
+        + ']　置信度 <b>' + fmt(r.confidence, 2) + '</b>'
+        + '　<span class="tag ' + (rc || 'tag-gray') + '">' + (r.route || '—') + '</span>'
+        + '<div style="margin-top:3px">宽度(log) ' + fmt(r.interval_width_log, 3)
+        + '　来源 ' + (r.confidence_source === 'calibrated' ? '台账校准' : '规则兜底') + '</div>';
+      drawShap(r.contrib || [], r.shap_base);
+    }).catch(function (e) {
+      $('predMsg').textContent = '测算失败：' + e.message;
+    });
+  }
+
+  function drawShap(rows, base) {
+    var top = rows.slice(0, 12).reverse();
+    shapChart = shapChart || mkChart($('chartShap'));
+    if (!shapChart || !top.length) return;
+    shapChart.setOption({
+      tooltip: { trigger: 'axis', formatter: function (p) {
+        return p[0].name + '<br/>Shapley 值 ' + Number(p[0].value).toFixed(4);
+      } },
+      grid: { left: 150, right: 60, top: 10, bottom: 24 },
+      xAxis: { type: 'value', name: '对数残差空间', axisLabel: { fontSize: 10 } },
+      yAxis: { type: 'category', data: top.map(function (r) { return r.feature; }), axisLabel: { fontSize: 10 } },
+      series: [{
+        type: 'bar', barWidth: 12,
+        data: top.map(function (r) {
+          return { value: r.shap, itemStyle: { color: r.shap >= 0 ? '#dc2626' : '#16a34a' } };
+        })
+      }],
+      title: { text: '基准值 ' + (base === undefined ? '—' : Number(base).toFixed(3)),
+               left: 'right', top: 0, textStyle: { fontSize: 11, color: '#6b7280', fontWeight: 'normal' } }
+    }, true);
+  }
+
+  // ---------------- 蒙特卡洛 ----------------
+  function doSim() {
+    var body = {
+      component: $('fComponent').value || '',
+      family: $('fFamily').value || null,
+      material: 'Q235B',
+      weight_t: parseFloat($('fTon').value) || 1,
+      dept: $('fDept').value, market: $('fMarket').value,
+      months_cnt: parseInt($('fMonths').value, 10) || 1,
+      n_draws: 6000
+    };
+    post('/api/simulate/cost', body).then(function (r) {
+      $('simCard').style.display = '';
+      var inp = r.inputs || {};
+      $('simKpi').innerHTML = [
+        ['P50 中位成本', fmtInt(r.p50) + ' 元', '确定性合计 ' + fmtInt(r.deterministic_total) + ' 元'],
+        ['P95 上限', fmtInt(r.p95) + ' 元', '95% 概率不超过'],
+        ['VaR95 风险价值', fmtInt(r.var95) + ' 元', '相对中位 +' + fmt(r.risk_premium_pct, 1) + '%'],
+        ['CVaR95 尾部期望', fmtInt(r.cvar95) + ' 元', '最坏 5% 情形的平均超额']
+      ].map(function (x) { return '<div class="kpi"><div class="lb">' + x[0] + '</div><div class="vl">' + x[1] + '</div><div class="sub">' + x[2] + '</div></div>'; }).join('');
+      var vi = r.vs_independent || {}, fc = r.factor_corr_empirical || {};
+      var gap = vi.var95_gap_pct;
+      $('simSrc').innerHTML = '波动来源全部取自真实数据：钢材单价 σ=' + fmt(inp.sigma_price_pct, 2)
+        + '%（2024 采购明细月度对数收益标准差）、工时费 σ=' + fmt(inp.sigma_labor_pct, 2)
+        + '%（由模型共形区间反解）。钢材单价 ' + fmt(inp.steel_price, 0) + ' 元/吨，来源：' + (inp.steel_source || '—')
+        + '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--gray-200)">'
+        + '<b>相关抽样 vs 独立抽样：</b>本仿真抽的是<b>公共因子</b>（钢材价 / 工时效率 / 损耗率）再按载荷传播到各成本项——'
+        + '因为外协=人工×费率、管理=(钢材+人工)×费率，成本项之间本是机械联动的。'
+        + '若按独立抽样，各项波动会互相抵消：VaR95 从 <b>' + fmtInt(r.var95) + '</b> 掉到 <b>'
+        + fmtInt(vi.var95) + '</b> 元（<span class="tag ' + (gap > 0 ? 'tag-bad' : 'tag-gray') + '">'
+        + (gap > 0 ? '低估 ' + fmt(gap, 1) + '%' : fmt(gap, 1) + '%') + '</span>），'
+        + 'CVaR95 ' + fmtInt(r.cvar95) + ' vs ' + fmtInt(vi.cvar95) + ' 元。'
+        + '<br>因子相关系数（钢材月价 vs 工时月结算额）实测 r=' + (fc.r === null || fc.r === undefined ? '—' : fmt(fc.r, 3))
+        + '，仅 ' + (fc.n_months || 0) + ' 个月度观测点。' + (fc.note || '') + '</div>'
+        + '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--gray-200)">'
+        + '<b>参数不确定性：</b>钢材 σ 是从 <b>' + fmtInt(inp.sigma_price_n_obs)
+        + ' 个月度观测</b>估出来的，这个样本量小到不能把 σ 当常数——它的 95% 置信区间宽度'
+        + '达到点估计的 106%。本仿真对 σ² 走<b>后验抽样</b>（σ² ~ s²·(n−1)/χ²<sub>n−1</sub>，Jeffreys 先验），'
+        + '即承认"我们并不知道 σ 到底多大"。'
+        + (inp.sigma_mode === 'posterior'
+           ? ' <span class="tag tag-good">已启用</span>'
+           : ' <span class="tag tag-gray">未启用</span>')
+        + ' 实测：把 σ 当已知常数时，单月价格 P99 只有 6286 元/吨，'
+        + '<b>甚至低于历史实际最高价 6529</b>——"99% 分位"盖不住已经发生过的值，这是自相矛盾的；'
+        + '改用后验抽样后 P99 升到 6592 元/吨（+4.9%）。</div>';
+
+      simChart = simChart || mkChart($('chartSim'));
+      var h = r.histogram || {};
+      if (simChart && h.counts && h.counts.length) {
+        simChart.setOption({
+          title: { text: '总成本概率分布（' + r.n_draws + ' 次抽样）', left: 'center',
+                   textStyle: { fontSize: 12, fontWeight: 'normal' } },
+          tooltip: { trigger: 'axis' },
+          grid: { left: 60, right: 24, top: 40, bottom: 40 },
+          xAxis: { type: 'category', data: h.edges.slice(0, -1).map(function (v) { return Math.round(v / 1000) + 'k'; }),
+                   axisLabel: { fontSize: 10, interval: 4 } },
+          yAxis: { type: 'value', name: '频次', axisLabel: { fontSize: 10 } },
+          series: [{ type: 'bar', data: h.counts, itemStyle: { color: '#60a5fa' }, barCategoryGap: '10%' }]
+        }, true);
+      }
+      torChart = torChart || mkChart($('chartTornado'));
+      if (torChart && (r.tornado || []).length) {
+        var t = r.tornado.slice().reverse();
+        torChart.setOption({
+          title: { text: '龙卷风图 · 单因素敏感度（P10~P90）', left: 'center',
+                   textStyle: { fontSize: 12, fontWeight: 'normal' } },
+          tooltip: { trigger: 'axis' },
+          grid: { left: 90, right: 30, top: 40, bottom: 24 },
+          xAxis: { type: 'value', name: '元', axisLabel: { fontSize: 10 } },
+          yAxis: { type: 'category', data: t.map(function (x) { return x.name; }), axisLabel: { fontSize: 10 } },
+          series: [{
+            type: 'bar', stack: 'x', itemStyle: { color: 'transparent' },
+            data: t.map(function (x) { return x.low; })
+          }, {
+            type: 'bar', stack: 'x', itemStyle: { color: '#2563eb' },
+            data: t.map(function (x) { return Math.max(0, x.high - x.low); })
+          }]
+        }, true);
+      }
+      setTimeout(function () { if (simChart) simChart.resize(); if (torChart) torChart.resize(); }, 30);
+    }).catch(function (e) { $('predMsg').textContent = '仿真失败：' + e.message; });
+  }
+
+  $('btnPredict').addEventListener('click', doPredict);
+  $('btnSim').addEventListener('click', doSim);
+  $('btnSample').addEventListener('click', function () {
+    if (SAMPLES.length) fillSample(0); else loadSamples();
+  });
+
+  loadMetrics();
+  loadSamples();
+  loadUncertainty();
+  loadDrift();
+  loadFamily();
+  loadAnomaly();
+  loadScatter();
+  setTimeout(doPredict, 600);
+})();
+</script>
+</main>
+  </div>
+</div>
+</body>
+</html>

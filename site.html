@@ -4,36 +4,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 项目现场端</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div><div class="topbar-title">项目现场</div></div>
-  </div>
-    <div class="topbar-right">
-    <span>2026-09</span>
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <div id="roleSwitcherSlot" data-role="site"></div>
-  </div>
-</div>
-<div class="role-layout">
-  <div class="role-sidebar">
-    <div class="role-sidebar-title">功能</div>
-    <div class="role-nav-item active" onclick="switchNav(this,0)">现场上报</div>
-    <div class="role-nav-item" onclick="switchNav(this,1)">现场巡检</div>
-    <div class="role-nav-item" onclick="switchNav(this,2)">材料签收</div>
-    <div class="role-nav-item" onclick="switchNav(this,3)">影像资料</div>
-  </div>
-  <div class="role-main">
-    <div class="role-page-head">
-      <div class="role-page-title">项目现场工作台</div>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
     </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">现场上报</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">现场巡检</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">材料签收</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">影像资料</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb"><b>项目现场</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="site"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="role-page-head">
+        <div class="role-page-title">项目现场工作台</div>
+      </div>
     <div class="role-kpi-grid" id="siteKpi"></div>
 
     <div class="role-panel" id="panel-report">
@@ -82,21 +97,19 @@
     </div>
 
     <div class="role-panel" id="panel-photo">
-      <div class="role-section-title">影像资料 · 现场构件与图纸对照存档</div>
+      <div class="role-section-title">影像资料 <span class="hint-q" data-tip="影像为菲达环保真实工程图渲染缩略图，用于现场构件与图纸对照存档">?</span></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="photoGrid"></div>
-      <div style="margin-top:12px;font-size:11px;color:var(--gray-500);text-align:center" id="photoNote">
-        影像为菲达环保真实工程图渲染缩略图，用于现场构件与图纸对照
-      </div>
     </div>
+    </main>
   </div>
 </div>
 
 <script>
 function switchNav(el, idx) {
-  var items = document.querySelectorAll('.role-nav-item');
+  var items = document.querySelectorAll('.app-sider-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   el.classList.add('active');
-  var panels = document.querySelectorAll('.role-main .role-panel');
+  var panels = document.querySelectorAll('.app-content .role-panel');
   if (panels[idx]) {
     panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
   } else {
@@ -112,10 +125,10 @@ function renderSite() {
   var todayAmt = siteReports.reduce(function(s,r){return s + (r.amount||0);},0);
   var pending = siteInspect.filter(function(i){return i.status==='待整改';}).length;
   document.getElementById('siteKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">上报条数</div><div class="rk-value">' + siteReports.length + '条</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">上报金额</div><div class="rk-value">¥' + Math.round(todayAmt).toLocaleString() + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">待整改项</div><div class="rk-value" style="color:#ea580c">' + pending + '项</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">材料签收</div><div class="rk-value" style="color:#16a34a">' + siteMaterial.length + '批</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">上报条数</div><div class="rk-value">' + siteReports.length + '条</div><div class="rk-sub">今日现场上报</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">上报金额</div><div class="rk-value">¥' + Math.round(todayAmt).toLocaleString() + '</div><div class="rk-sub">今日上报金额</div></div>' +
+    '<div class="role-kpi-card amber"><div class="rk-label">待整改项</div><div class="rk-value">' + pending + '项</div><div class="rk-sub">待整改项数</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">材料签收</div><div class="rk-value">' + siteMaterial.length + '批</div><div class="rk-sub">已签收批次</div></div>';
 
   // 上报记录
   var html = '';
@@ -182,7 +195,7 @@ async function loadSiteData(){
     document.getElementById('photoGrid').innerHTML = show.map(function(r){
       const nm = r.file.split(/[\\\\/]/).pop().replace(/\.pdf$/i,'');
       return '<div style="border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;background:#fff">' +
-        '<img src="' + apiPreviewUrl(r.file) + '" ' +
+        '<img src="/api/drawings/preview?file=' + encodeURIComponent(r.file) + '" ' +
         'style="width:100%;height:110px;object-fit:cover;background:#f8fafc;display:block" ' +
         'onerror="this.style.display=\'none\'">' +
         '<div style="padding:6px 8px;font-size:11px;color:var(--gray-700);font-weight:600">' + nm + '</div>' +

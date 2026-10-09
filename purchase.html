@@ -4,36 +4,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 采购外协端</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div><div class="topbar-title">采购外协</div></div>
-  </div>
-    <div class="topbar-right">
-    <span>2026-09</span>
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <div id="roleSwitcherSlot" data-role="purchase"></div>
-  </div>
-</div>
-<div class="role-layout">
-  <div class="role-sidebar">
-    <div class="role-sidebar-title">功能</div>
-    <div class="role-nav-item active" onclick="switchNav(this,0)">待审批申请</div>
-    <div class="role-nav-item" onclick="switchNav(this,1)">三家比价</div>
-    <div class="role-nav-item" onclick="switchNav(this,2)">外协订单</div>
-    <div class="role-nav-item" onclick="switchNav(this,3)">采购分析</div>
-  </div>
-  <div class="role-main">
-    <div class="role-page-head">
-      <div class="role-page-title">采购外协工作台</div>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
     </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">待审批申请</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">三家比价</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">外协订单</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">采购分析</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb"><b>采购外协</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="purchase"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="role-page-head">
+        <div class="role-page-title">采购外协工作台</div>
+      </div>
     <div class="role-kpi-grid" id="purKpi"></div>
 
     <div class="role-panel" id="panel-pending">
@@ -62,21 +77,22 @@
     <div class="role-panel" id="panel-analysis">
       <div class="role-section-title">采购成本分析</div>
       <div class="role-kpi-grid" style="margin-bottom:16px">
-        <div class="role-kpi-card"><div class="rk-label">本月采购额</div><div class="rk-value">286万</div></div>
-        <div class="role-kpi-card"><div class="rk-label">比价节约</div><div class="rk-value" style="color:#16a34a">12.8万</div></div>
-        <div class="role-kpi-card"><div class="rk-label">供应商数量</div><div class="rk-value">28家</div></div>
-        <div class="role-kpi-card"><div class="rk-label">准时交货率</div><div class="rk-value" style="color:#16a34a">94.2%</div></div>
+        <div class="role-kpi-card blue"><div class="rk-label">本月采购额</div><div class="rk-value">286万</div><div class="rk-sub">本月采购总额</div></div>
+        <div class="role-kpi-card green"><div class="rk-label">比价节约</div><div class="rk-value">12.8万</div><div class="rk-sub">三家比价节约</div></div>
+        <div class="role-kpi-card blue"><div class="rk-label">供应商数量</div><div class="rk-value">28家</div><div class="rk-sub">活跃供应商</div></div>
+        <div class="role-kpi-card green"><div class="rk-label">准时交货率</div><div class="rk-value">94.2%</div><div class="rk-sub">外协准时交付</div></div>
       </div>
     </div>
+    </main>
   </div>
 </div>
 
 <script>
 function switchNav(el, idx) {
-  var items = document.querySelectorAll('.role-nav-item');
+  var items = document.querySelectorAll('.app-sider-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   el.classList.add('active');
-  var panels = document.querySelectorAll('.role-main .role-panel');
+  var panels = document.querySelectorAll('.app-content .role-panel');
   if (panels[idx]) {
     panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
   } else {
@@ -88,10 +104,10 @@ function renderPurchase() {
   var pending = DB.purchaseReqs.filter(function(r){return r.status==='pending';});
   var approved = DB.purchaseReqs.filter(function(r){return r.status==='approved';});
   document.getElementById('purKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">待审批</div><div class="rk-value">' + pending.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">已审批</div><div class="rk-value" style="color:#16a34a">' + approved.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">本月采购额</div><div class="rk-value">286万</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">比价节约</div><div class="rk-value" style="color:#16a34a">12.8万</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">待审批</div><div class="rk-value">' + pending.length + '</div><div class="rk-sub">待审批申请数</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">已审批</div><div class="rk-value">' + approved.length + '</div><div class="rk-sub">已审批申请数</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">本月采购额</div><div class="rk-value">286万</div><div class="rk-sub">本月采购总额</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">比价节约</div><div class="rk-value">12.8万</div><div class="rk-sub">三家比价节约</div></div>';
 
   var phtml = '';
   if (pending.length === 0) {

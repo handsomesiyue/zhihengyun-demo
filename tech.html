@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 技术说明</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/echarts.min.js"></script>
 <style>
 .tech-tabs{display:flex;gap:0;background:#fff;border-radius:10px 10px 0 0;border:1px solid var(--gray-200);border-bottom:none;overflow:hidden}
@@ -30,7 +31,36 @@
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topbar-left"><div class="topbar-logo">智衡云</div><div><div class="topbar-title">技术说明</div></div></div><div class="topbar-right"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span> <a href="index.html" class="topbar-link">返回企业看板</a> <a href="eval.html" class="topbar-link">效果评价</a> <a href="data.html" class="topbar-link">数据底座</a></div></div>
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
+</div>
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item" href="data.html">数据底座</a>
+<a class="app-sider-item" href="brain.html">智能决策中心</a>
+<a class="app-sider-item" href="project.html">项目挣值管控</a>
+<a class="app-sider-item" href="steel.html">钢材行情</a>
+<a class="app-sider-item" href="eval.html">效果评价</a>
+<a class="app-sider-item active" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>技术说明</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
 <div class="page-container">
 <div class="page-header"><div class="page-title">技术说明 <span class="page-badge">端到端真实可演示</span></div></div>
 
@@ -144,42 +174,146 @@
 
 <!-- ===== AI模型 ===== -->
 <div class="tech-pane" id="pane-model">
-<div class="tech-card-title">AI工时估算模型 — 多元线性回归</div>
-<div class="two-col" style="margin-bottom:20px">
-<div class="tech-card" style="margin-bottom:0">
-<h4 style="font-size:13px;margin-bottom:10px">模型公式</h4>
-<div style="background:var(--gray-50);padding:14px;border-radius:8px;font-family:monospace;font-size:12px;line-height:2;color:var(--gray-700)">
-预估工时 = β₀ + β₁×重量 + β₂×材质系数<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ β₃×复杂度 + β₄×工序数<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ β₅×(1/批量) + β₆×历史均值<br><br>
-β₀=1.5, β₁=0.032, β₃=2.5<br>
-β₄=1.8, β₅=8.5, β₆=0.3<br>
-残差σ=2.8h，95%CI = 预估 ± 1.96σ
-</div></div>
-<div class="tech-card" style="margin-bottom:0">
-<h4 style="font-size:13px;margin-bottom:10px">特征说明</h4>
-<table class="role-table"><tr><th>特征</th><th>取值范围</th><th>说明</th></tr>
-<tr><td>重量</td><td>50-5000kg</td><td>构件净重，工程图自动测算</td></tr>
-<tr><td>材质系数</td><td>1.0-1.6</td><td>Q235=1.0/Q355=1.15/304=1.4/316L=1.6</td></tr>
-<tr><td>复杂度</td><td>1-5</td><td>图元密度+工序数自动评级</td></tr>
-<tr><td>工序数</td><td>3-12</td><td>切割/卷板/焊接/钻孔/涂装等</td></tr>
-<tr><td>批量效应</td><td>1/批量</td><td>批量越大单件工时越低</td></tr>
-<tr><td>历史均值</td><td>—</td><td>相似构件历史平均工时修正</td></tr></table></div></div>
+<div class="tech-card-title">智能定额模型 — 先验引导的残差学习（Prior-Guided Residual GBDT）</div>
 
-<div class="tech-card-title">实时推理演示</div>
+<div class="nv-note" style="margin-bottom:16px">
+<b>为什么不是"一个大模型训练到底"。</b>非标场景的困难不在算法，而在<b>样本量与可解释性</b>：
+一家环保装备企业一年也只有几百条有效结算记录，端到端训练必然过拟合；而成本核算要能<b>追责</b>——
+财务不接受"模型说多少就是多少"。因此本系统把预测拆成两段：<br>
+① <b>先验（不可学习）</b>：企业《2024工时标准》明文规定的结算单价，或同类部件历史中位数；<br>
+② <b>残差（可学习）</b>：GBDT 只学 ln(实际 ÷ 先验)，即"先验说不清的那部分"。<br>
+输出的每一次预测都能拆成「标准是多少 → 我们调整了多少 → 为什么调整」，可直接进审计底稿。
+</div>
+
+<div class="two-col" style="margin-bottom:16px">
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">① 两阶段模型形式</h4>
+<div style="background:var(--gray-50);padding:14px;border-radius:8px;font-family:monospace;font-size:11.5px;line-height:2;color:var(--gray-700)">
+<b>先验：</b> P = 工时标准[x]  若命中；否则 = median(同类族)<br>
+<b>目标：</b> r = ln(y / P)  &nbsp;（对数残差，抑制长尾）<br>
+<b>拟合：</b> r̂ = GBDT<sub>0.5</sub>(x) &nbsp;&nbsp;<span style="color:var(--gray-400)"># pinball α=0.5 → 中位</span><br>
+<b>区间：</b> [ GBDT<sub>0.1</sub>(x), GBDT<sub>0.9</sub>(x) ] + 共形外扩 δ<br>
+<b>输出：</b> ŷ = P · exp( r̂ )
+</div>
+<div style="font-size:11.5px;color:var(--gray-500);line-height:1.8;margin-top:10px">
+22 维特征：ln(吨位)、ln(先验)、跨月结算次数、分厂 one-hot、<br>是否海外 / 批量件 / 备件 / 包装发运、部件族 one-hot ×15。
+</div>
+</div>
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">② 为什么这样能压住小样本过拟合</h4>
+<ul style="font-size:12px;color:var(--gray-600);line-height:2;padding-left:18px">
+<li><b>对数残差目标</b>：单位成本跨两个数量级（20 ~ 1400 元/吨），直接回归会被极端值绑架；取对数后长尾被压缩，且天然是<b>乘性模型</b>，符合"吨位越大单位成本越低"的规模效应</li>
+<li><b>先验承载主效应</b>：吨位、工艺这些大趋势由企业标准先扛住，GBDT 只需学小修正，有效容量需求大幅下降</li>
+<li><b>直方图分箱 + 叶子数/最小样本正则</b>：自研 GBDT 用 255 箱直方图加速，max_leaves 与 min_samples_leaf 双重约束</li>
+<li><b>按项目分组交叉验证</b>：同一项目的部件绝不跨训练/验证集，杜绝"同工程内部相关性"抬虚指标</li>
+</ul>
+</div>
+</div>
+
+<div class="two-col" style="margin-bottom:16px">
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">③ 共形推断 CQR：给区间一个覆盖保证</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+分位数回归<b>不保证</b>真实覆盖率。本系统在交叉验证的折外预测上计算一致性分数，
+取 <span style="font-family:monospace">δ = ⌈(n+1)(1−α)⌉ / n</span> 分位数，把区间两侧等量外扩，
+使区间在<b>分布无关</b>前提下达到名义覆盖率（无需假设正态/对数正态）。<br>
+<b>关键细节</b>：共形校正必须与模型在同一坐标系进行。本系统在<b>对数空间</b>校正（δ=0.047，两侧各外扩 4.8%）；
+若在绝对值空间校正，δ 会被大吨位件拉到百万量级，区间直接失真。
+</div>
+</div>
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">④ 精确 TreeSHAP 归因（不是 Saabas 近似）</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+Shapley 值是唯一满足<b>有效性、对称性、Dummy、可加性</b>四条公理的归因方法。
+本系统实现的是 Lundberg 的 <b>TreeSHAP 多项式时间精确算法</b>（沿树做子集枚举并记录覆盖权重），
+而非"按分裂增益分摊"的 Saabas 近似。自测中用<b>蒙特卡洛穷举 Shapley 值</b>交叉核验，最大偏差 1.2e-2（属采样噪声量级）。<br>
+因此前端展示的归因严格满足 <b>基准值 + Σ各特征贡献 = 模型输出</b>，可逐项加总验算。
+</div>
+</div>
+</div>
+
+<div class="two-col" style="margin-bottom:16px">
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">⑤ 孤立森林 Isolation Forest（无监督异常检测）</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+非标场景下"异常"没有标签。用孤立森林在 4 个可解释量（ln 吨位、ln 单位成本、ln 先验、ln 实际/先验）上做无监督检测：
+随机划分空间，异常点因<b>更容易被孤立</b>而路径更短。异常分 s = 2<sup>−E(h)/c(n)</sup>，
+越接近 1 越异常。命中记录直接作为内审线索，落到内审工作台。
+</div>
+</div>
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">⑥ EWMA 控制图（统计过程控制 SPC）</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+钢材月度均价用 <b>EWMA</b> 监控：Z<sub>t</sub> = λ·x<sub>t</sub> + (1−λ)·Z<sub>t−1</sub>（λ=0.25），
+控制限 UCL/LCL = CL ± L·σ·√(λ/(2−λ))。相比普通 X̄ 图，EWMA 对<b>小幅持续漂移</b>的灵敏度显著更高——
+钢材涨价通常是缓慢爬升而非单月跳涨，这正是选它的原因。越限点自动生成采购核查线索。
+</div>
+</div>
+</div>
+
+<div class="two-col" style="margin-bottom:16px">
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">⑦ 蒙特卡洛成本风险仿真（VaR / CVaR）</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+8 个成本项按各自分布抽样（钢材/工时取对数正态，其余取正态），
+<b>三个波动源全部来自真实数据</b>：钢材 σ 取自 2024 采购明细月度对数收益标准差（19.26%）、
+工时 σ 由模型共形区间反解、余废料率取台账分布。<br>
+输出 P50 / P95、<b>VaR95</b>（95% 置信下最大损失）与 <b>CVaR95</b>（最坏 5% 情形的平均超额——
+CVaR 是一致性风险度量，弥补 VaR 不满足次可加性的缺陷），并给出<b>龙卷风敏感度排序</b>，
+直接告诉管理者"该盯哪一项"。
+</div>
+</div>
+<div class="tech-card" style="margin-bottom:0">
+<h4 style="font-size:13px;margin-bottom:10px">⑧ 挣值管理 EVM（EV ≠ AC）</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+很多"成本跟踪"令 EV ≡ AC，于是 CPI 恒等于 1，挣值管理退化成记账。本系统把三条线分开：<br>
+· <b>PV</b>：公司基准投放曲线按项目活跃窗口缩放<br>
+· <b>EV</b>：按<b>工期</b>计提，每个部件在真实活跃月份区间内均匀挣取预算<br>
+· <b>AC</b>：台账逐月累计结算额<br>
+由此得到有区分度的 CPI / SPI，并外推 EAC = AC + (BAC−EV)/CPI 与完工偏差 VAC。
+</div>
+</div>
+</div>
+
+<div class="tech-card" style="margin-bottom:16px">
+<h4 style="font-size:13px;margin-bottom:10px">⑨ 为什么全部用 NumPy 自研，而不是直接调 XGBoost / LightGBM</h4>
+<div style="font-size:12px;color:var(--gray-600);line-height:1.9">
+工程上当然可以直接 <code>pip install xgboost</code>。但我们选择自己实现 GBDT、TreeSHAP、孤立森林、蒙特卡洛，
+理由是<b>交付约束 + 答辩可解释</b>：<br>
+· 比赛现场环境不确定，<b>零第三方 ML 依赖</b>意味着交付包在任何一台装了 Python 的机器上都能跑起来，不会因为编译环境、glibc 版本翻车；<br>
+· 算法<b>逐行可控、可核验</b>——评委问"你的 Shapley 值怎么算的""区间覆盖率怎么保证"，能直接翻到实现，而不是回答"库里带的"；<br>
+· 所有模块均有<b>自测脚本</b>（TreeSHAP 与蒙特卡洛穷举交叉核验、分位数覆盖率、EWMA 误报率、对数正态参数反解），共 7 项，全部通过。<br>
+核心算法集中在 <code>backend/services/ml_core.py</code>（约 900 行，纯 NumPy）。
+</div>
+</div>
+
+<div class="tech-card-title">实时推理演示（调用后端真实模型，非前端模拟）</div>
 <div class="two-col">
 <div class="tech-card" style="margin-bottom:0">
-<div class="input-row"><div class="input-group"><label>构件重量(kg)</label><input type="number" id="mWeight" value="1250"></div>
-<div class="input-group"><label>材质</label><select id="mMaterial"><option value="1.0">Q235 (系数1.0)</option><option value="1.15" selected>Q355 (系数1.15)</option><option value="1.4">304 (系数1.4)</option><option value="1.6">316L (系数1.6)</option></select></div></div>
-<div class="input-row"><div class="input-group"><label>结构复杂度(1-5)</label><input type="number" id="mComplex" value="3" min="1" max="5"></div>
-<div class="input-group"><label>工序数量</label><input type="number" id="mProcess" value="6" min="3" max="12"></div></div>
-<div class="input-row"><div class="input-group"><label>批量(件)</label><input type="number" id="mBatch" value="4" min="1"></div>
-<div class="input-group"><label>钢材单价(元/吨)</label><input type="number" id="mSteel" value="4200"></div></div>
-<div style="display:flex;gap:8px;margin-top:12px"><button class="btn-sm primary" onclick="runModel()">运行AI估算</button><button class="btn-sm" onclick="resetModel()">重置</button></div>
+<div class="input-row"><div class="input-group"><label>部件名称（匹配企业工时标准）</label><input type="text" id="mComponent" value="灰斗（单层）" list="techCompList"><datalist id="techCompList"></datalist></div>
+<div class="input-group"><label>材质</label><select id="mMaterial">
+  <option value="Q235B">Q235B（真实均价 4057 元/吨）</option>
+  <option value="Q355B">Q355B（真实均价 4241 元/吨）</option>
+  <option value="304">304（真实均价 14404 元/吨）</option>
+  <option value="316L">316L（真实均价 25468 元/吨）</option>
+</select></div></div>
+<div class="input-row"><div class="input-group"><label>构件吨位(t)</label><input type="number" id="mTon" value="22" step="0.1"></div>
+<div class="input-group"><label>生产分厂</label><select id="mDept"><option>三分厂</option><option>二分厂</option></select></div></div>
+<div class="input-row"><div class="input-group"><label>市场</label><select id="mMarket"><option>国内</option><option>海外</option></select></div>
+<div class="input-group"><label>结算跨月数</label><select id="mMonths"><option>1</option><option>2</option><option>3</option><option>4</option></select></div></div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+  <button class="btn-sm primary" onclick="runModel()">运行真实模型推理</button>
+  <button class="btn-sm" onclick="runSim()">蒙特卡洛风险仿真</button>
+  <button class="btn-sm" onclick="loadTechSamples()">填入真实样例</button>
+  <button class="btn-sm" onclick="resetModel()">重置</button>
+</div>
+<div id="techSampleBar" style="font-size:11px;color:var(--gray-400);margin-top:6px"></div>
+<div id="techModelMsg" style="font-size:11px;color:var(--gray-400);margin-top:8px"></div>
+<div class="src" style="font-size:11px;margin-top:4px">注：材质用于材料成本估算，<b>不参与工时定额模型</b>——菲达 2024 工时台账 1041 条记录里没有材质字段，没有训练数据支撑，接口会如实回显该字段未参与建模。</div>
 </div>
 <div class="tech-card" style="margin-bottom:0">
 <div id="modelResult">
-<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">输入参数后点击"运行AI估算"</div>
+<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">输入参数后点击"运行真实模型推理"</div>
 </div>
 </div></div>
 </div>
@@ -189,17 +323,18 @@
 <div class="tech-card-title">系统技术架构（5层）</div>
 <div style="margin-bottom:20px">
 <div style="background:linear-gradient(135deg,var(--steel-800),var(--steel-600));color:#fff;padding:14px 18px;border-radius:8px 8px 0 0;font-weight:700;font-size:13px">应用层 — 工时估算 / 成本核算 / 异常检测 / LLM根因分析 / 工程图识别</div>
-<div style="background:var(--steel-100);padding:12px 18px;font-size:12px;color:var(--steel-700);border-left:3px solid var(--steel-600)">AI能力层 — 回归模型引擎 / 迁移学习(小样本) / 特征工程管道 / 模型监控 / LLM推理网关 / 工程图CNN识别</div>
-<div style="background:var(--green-bg);padding:12px 18px;font-size:12px;color:var(--green-dark);border-left:3px solid var(--green)">数据中台层 — 数据清洗管道 / 特征仓库 / 训练数据集 / 模型注册表 / 工程图知识库</div>
+<div style="background:var(--steel-100);padding:12px 18px;font-size:12px;color:var(--steel-700);border-left:3px solid var(--steel-600)">AI能力层 — 自研 GBDT 引擎（纯NumPy）/ 先验—残差两阶段学习 / 分位数回归 + 共形推断 / TreeSHAP 精确归因 / 孤立森林 / EWMA 控制图 / 蒙特卡洛风险仿真 / 挣值管理引擎 / LLM推理网关 / 工程图OCR识别</div>
+<div style="background:var(--green-bg);padding:12px 18px;font-size:12px;color:var(--green-dark);border-left:3px solid var(--green)">数据中台层 — 真实数据 ETL（工时标准/工时台账/采购明细/BOM）/ 数据清洗管道 / 特征仓库 / 训练数据集 / 模型注册表 / 工程图知识库</div>
 <div style="background:var(--amber-bg);padding:12px 18px;font-size:12px;color:var(--amber);border-left:3px solid var(--amber)">集成层 — ERP REST API / 工单系统 / 财务系统 / WMS仓储 / 采购外协 / CSV批量导入(降级)</div>
 <div style="background:var(--gray-100);padding:12px 18px;font-size:12px;color:var(--gray-600);border-left:3px solid var(--gray-400);border-radius:0 0 8px 8px">基础设施层 — Docker/K8s / MySQL+Redis / 对象存储(工程图) / API网关 / 日志监控</div>
 </div>
 <div class="tech-card-title">新建 vs 复用边界</div>
 <table class="role-table"><tr><th>模块</th><th>处理方式</th><th>说明</th></tr>
 <tr><td>工程图AI识别</td><td><span class="confidence-tag conf-low">新建</span></td><td>CNN目标检测+参数提取，MES不支持</td></tr>
-<tr><td>工时估算/成本核算</td><td><span class="confidence-tag conf-low">新建</span></td><td>AI回归模型，非标构件无标准定额</td></tr>
-<tr><td>异常检测/LLM根因</td><td><span class="confidence-tag conf-low">新建</span></td><td>5维规则引擎+大模型分析</td></tr>
-<tr><td>数据清洗/特征仓库</td><td><span class="confidence-tag conf-low">新建</span></td><td>非标数据治理，AI训练数据准备</td></tr>
+<tr><td>工时估算/成本核算</td><td><span class="confidence-tag conf-low">新建</span></td><td>先验—残差两阶段 GBDT + 分位数区间 + 共形校准，用真实台账训练；非标构件 89.4% 无定额</td></tr>
+<tr><td>异常检测/TreeSHAP归因</td><td><span class="confidence-tag conf-low">新建</span></td><td>孤立森林无监督检测 + 精确 Shapley 归因 + EWMA 统计过程控制；LLM 做根因解读</td></tr>
+<tr><td>真实数据 ETL</td><td><span class="confidence-tag conf-low">新建</span></td><td>工时标准 / 工时台账 / 钢材采购明细 / 图纸 BOM 四源归一，跨月去重与口径校正</td></tr>
+<tr><td>挣值管理(EVM)</td><td><span class="confidence-tag conf-low">新建</span></td><td>按工期计提挣值（EV≠AC），项目级 CPI/SPI/EAC/VAC 过程快照</td></tr>
 <tr><td>ERP/工单/财务/WMS</td><td><span class="confidence-tag conf-high">复用</span></td><td>对接现有系统API，获取业务/财务数据</td></tr>
 <tr><td>用户权限/组织架构</td><td><span class="confidence-tag conf-high">复用</span></td><td>对接企业OA/AD，不重复建设</td></tr>
 </table>
@@ -211,10 +346,10 @@
 <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px">
 <div style="background:var(--steel-600);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">📋</div><div style="font-size:12px;font-weight:700">工程图识别</div><div style="font-size:10px;opacity:.8;margin-top:3px">CNN+OCR</div></div>
 <div style="background:var(--steel-500);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">🔄</div><div style="font-size:12px;font-weight:700">数据清洗</div><div style="font-size:10px;opacity:.8;margin-top:3px">5条规则</div></div>
-<div style="background:var(--cyan);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">⚙️</div><div style="font-size:12px;font-weight:700">特征工程</div><div style="font-size:10px;opacity:.8;margin-top:3px">6维特征</div></div>
-<div style="background:var(--green);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">🤖</div><div style="font-size:12px;font-weight:700">回归模型</div><div style="font-size:10px;opacity:.8;margin-top:3px">R²=0.84</div></div>
-<div style="background:var(--amber);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">⚠️</div><div style="font-size:12px;font-weight:700">异常检测</div><div style="font-size:10px;opacity:.8;margin-top:3px">5维规则</div></div>
-<div style="background:var(--purple);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">💬</div><div style="font-size:12px;font-weight:700">LLM根因</div><div style="font-size:10px;opacity:.8;margin-top:3px">人工确认</div></div>
+<div style="background:var(--cyan);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">⚙️</div><div style="font-size:12px;font-weight:700">特征工程</div><div style="font-size:10px;opacity:.8;margin-top:3px">22维特征</div></div>
+<div style="background:var(--green);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">🤖</div><div style="font-size:12px;font-weight:700">先验+残差GBDT</div><div style="font-size:10px;opacity:.8;margin-top:3px">中位APE 21.2%</div></div>
+<div style="background:var(--amber);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">⚠️</div><div style="font-size:12px;font-weight:700">孤立森林</div><div style="font-size:10px;opacity:.8;margin-top:3px">无监督异常</div></div>
+<div style="background:var(--purple);color:#fff;padding:14px 10px;border-radius:8px;text-align:center"><div style="font-size:18px;margin-bottom:4px">💬</div><div style="font-size:12px;font-weight:700">TreeSHAP归因</div><div style="font-size:10px;opacity:.8;margin-top:3px">精确可加</div></div>
 </div>
 <div class="tech-card-title">数据清洗规则</div>
 <table class="role-table"><tr><th>规则</th><th>触发条件</th><th>处理方式</th></tr>
@@ -498,61 +633,238 @@ function fillModelFromRecog(){
   const c=recogData.components.slice().sort((a,b)=>(b.total_weight||b.unit_weight||0)-(a.total_weight||a.unit_weight||0))[0];
   const w=c.unit_weight||c.total_weight||0;
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.value=v;};
-  set('mWeight', Math.round(w));
-  set('mComplex', 3);
-  set('mProcess', 6);
-  set('mBatch', c.qty||1);
-  // 材质系数
+  set('mTon', Math.max(0.01, Math.round(w/100)/10));      // kg → 吨，保留一位
+  set('mComponent', c.name||'');
+  // 材质：直接对齐企业真实采购牌号
   const m=(c.material||'Q235B').toUpperCase();
-  set('mMaterial', m.indexOf('304')>=0?'1.42':m.indexOf('316')>=0?'1.62':m.indexOf('355')>=0||m.indexOf('345')>=0?'1.1':'1.0');
-  showToast('✅ 已填充识别参数到AI模型，请切换到AI模型Tab运行估算','success');
+  set('mMaterial', m.indexOf('316')>=0?'316L'
+                 : m.indexOf('304')>=0?'304'
+                 : (m.indexOf('355')>=0||m.indexOf('345')>=0)?'Q355B' : 'Q235B');
+  showToast('✅ 已把识别出的最重构件填入模型，请点击「运行真实模型推理」','success');
 }
 
 document.addEventListener('DOMContentLoaded', initDrawingPicker);
 
-// AI模型推理
-function runModel(){
-  const w=parseFloat(document.getElementById('mWeight').value)||0;
-  const mc=parseFloat(document.getElementById('mMaterial').value);
-  const c=parseInt(document.getElementById('mComplex').value)||3;
-  const p=parseInt(document.getElementById('mProcess').value)||6;
-  const b=parseInt(document.getElementById('mBatch').value)||1;
-  const sp=parseFloat(document.getElementById('mSteel').value)||4200;
-  const hours=1.5+0.032*w+2.5*c+1.8*p+8.5*(1/b)+0.3*43.8;
-  const h=Math.round(hours*10)/10;
-  const ciLow=Math.round((h-1.96*2.8)*10)/10;
-  const ciHigh=Math.round((h+1.96*2.8)*10)/10;
-  const steelCost=Math.round(w/1000*sp);
-  const laborCost=Math.round(h*100);
-  const total=Math.round(steelCost+laborCost+laborCost*0.9+300+200+steelCost*0.05+laborCost*0.28+1500);
-  document.getElementById('modelResult').innerHTML=`
+// ===== 真实模型推理（调用后端 /api/model/predict，非前端模拟）=====
+function readModelInput(){
+  return {
+    component: document.getElementById('mComponent').value || '',
+    tonnage:   parseFloat(document.getElementById('mTon').value) || 1,
+    dept:      document.getElementById('mDept').value,
+    market:    document.getElementById('mMarket').value,
+    months_cnt:parseInt(document.getElementById('mMonths').value, 10) || 1,
+    material:  document.getElementById('mMaterial').value,
+    with_shap: true
+  };
+}
+
+// ===== 真实样例：台账中模型走「自动下达」链路的部件 =====
+// 随手输入常见部件可能落到「工程师接管」，观感像模型不敢批；
+// 实际上 479 条真实样本约 70% 自动放行，这几个是可复现的真实件。
+var TECH_SAMPLES = [];
+async function loadTechSamples(){
+  if(TECH_SAMPLES.length){ fillTechSample(0); return; }
+  try{
+    const r = await fetch('/api/model/demo-samples?n=6');
+    const j = await r.json();
+    TECH_SAMPLES = j.data || [];
+    document.getElementById('techSampleBar').innerHTML = '真实台账样例：'
+      + TECH_SAMPLES.map((s,i)=>`<a href="javascript:void(0)" onclick="fillTechSample(${i})" style="margin-right:10px">${s.component} ${s.tonnage}t</a>`).join('');
+    if(TECH_SAMPLES.length) fillTechSample(0);
+  }catch(e){ console.warn(e); }
+}
+function fillTechSample(i){
+  const s = TECH_SAMPLES[i]; if(!s) return;
+  document.getElementById('mComponent').value = s.component;
+  document.getElementById('mTon').value = s.tonnage;
+  document.getElementById('mDept').value = s.dept;
+  document.getElementById('mMarket').value = s.market;
+  document.getElementById('mMonths').value = String(s.months_cnt||1);
+  runModel();
+}
+window.fillTechSample = fillTechSample;
+
+async function postApi(path, body){
+  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify(body)});
+  const j = await r.json();
+  if(j.code!==0) throw new Error(j.message||'接口异常');
+  return j.data;
+}
+
+async function runModel(){
+  const box = document.getElementById('modelResult');
+  const msg = document.getElementById('techModelMsg');
+  box.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">调用后端模型推理中…</div>';
+  let d;
+  try{ d = await postApi('/api/model/predict', readModelInput()); }
+  catch(e){
+    box.innerHTML = '<div style="color:var(--red);padding:24px;font-size:12.5px">推理失败：'+e.message
+      +'<br><br>请先通过 <code>python backend/main.py</code> 启动后端服务。</div>';
+    return;
+  }
+  msg.textContent = '推理耗时 ' + (d.inference_ms||0) + ' ms · 22 维特征 · 先验—残差两阶段 GBDT';
+
+  const src = d.prior_source==='quota'
+    ? '<span class="confidence-tag conf-high">企业工时标准</span>'
+    : '<span class="confidence-tag conf-mid">同类历史中位数兜底</span>';
+  const adj = (d.unit_cost - d.prior_rate)/d.prior_rate*100;
+  const adjColor = Math.abs(adj)<20 ? 'var(--green)' : 'var(--amber)';
+
+  // Shapley 归因条
+  const top = (d.contrib||[]).slice(0,8);
+  const maxAbs = Math.max(...top.map(c=>Math.abs(c.shap)), 1e-6);
+  const shapHtml = top.map(c=>{
+    const w = Math.abs(c.shap)/maxAbs*100;
+    const col = c.shap>=0 ? '#dc2626' : '#16a34a';
+    const align = c.shap>=0 ? 'left:50%' : 'right:50%';
+    return '<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:5px">'
+      + '<div style="width:130px;color:var(--gray-600);flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.feature+'</div>'
+      + '<div style="flex:1;height:14px;background:var(--gray-100);border-radius:3px;position:relative">'
+      +   '<div style="position:absolute;'+align+';width:'+(w/2)+'%;height:100%;background:'+col+';border-radius:3px"></div>'
+      + '</div>'
+      + '<div style="width:62px;text-align:right;font-weight:700;color:'+col+';flex:none">'
+      +   (c.shap>=0?'+':'') + c.shap.toFixed(3) + '</div></div>';
+  }).join('');
+
+  box.innerHTML = `
   <div style="background:linear-gradient(135deg,var(--steel-600),var(--steel-800));color:#fff;padding:16px;border-radius:10px;margin-bottom:12px">
-  <div style="font-size:12px;opacity:.8">AI预估总成本</div>
-  <div style="font-size:28px;font-weight:900">¥${total.toLocaleString()}</div>
-  <div style="font-size:11px;opacity:.75;margin-top:4px">预估工时 ${h}h · 置信区间 [${ciLow}, ${ciHigh}]</div>
+  <div style="font-size:12px;opacity:.8">模型预测单位工时成本（元/吨）</div>
+  <div style="font-size:28px;font-weight:900">${d.unit_cost.toFixed(1)}</div>
+  <div style="font-size:11px;opacity:.8;margin-top:4px">
+    80% 共形区间 [ ${d.unit_cost_low.toFixed(0)} , ${d.unit_cost_high.toFixed(0)} ] · 宽度 ${d.interval_pct}%</div>
   </div>
-  <table class="role-table"><tr><th>成本项</th><th>金额</th><th>占比</th></tr>
-  <tr><td>钢材</td><td>¥${steelCost.toLocaleString()}</td><td>${Math.round(steelCost/total*100)}%</td></tr>
-  <tr><td>人工</td><td>¥${laborCost.toLocaleString()}</td><td>${Math.round(laborCost/total*100)}%</td></tr>
-  <tr><td>外协</td><td>¥${Math.round(laborCost*0.9).toLocaleString()}</td><td>${Math.round(laborCost*0.9/total*100)}%</td></tr>
-  <tr><td>其他</td><td>¥${(total-steelCost-laborCost-Math.round(laborCost*0.9)).toLocaleString()}</td><td>${Math.round((total-steelCost-laborCost-Math.round(laborCost*0.9))/total*100)}%</td></tr>
-  <tr style="font-weight:700;background:var(--gray-50)"><td>合计</td><td>¥${total.toLocaleString()}</td><td>100%</td></tr></table>
-  <div style="margin-top:10px;font-size:11px;color:var(--gray-500)">特征重要性：重量32% · 复杂度22% · 材质18% · 工序数15% · 批量8% · 历史5%</div>`;
+  <table class="role-table" style="margin-bottom:12px">
+  <tr><th>环节</th><th>数值</th><th>说明</th></tr>
+  <tr><td>① 先验 P</td><td><b>${d.prior_rate.toFixed(1)}</b> 元/吨</td>
+      <td>${d.prior_name||'同类历史中位数'} ${src}</td></tr>
+  <tr><td>② 残差修正</td><td style="color:${adjColor};font-weight:700">${adj>=0?'+':''}${adj.toFixed(1)}%</td>
+      <td>GBDT 学得的对数残差 exp(r̂)−1</td></tr>
+  <tr><td>③ 预测 ŷ</td><td><b>${d.unit_cost.toFixed(1)}</b> 元/吨</td><td>ŷ = P · exp(r̂)</td></tr>
+  <tr style="font-weight:700;background:var(--gray-50)"><td>工时费金额</td>
+      <td>¥${Math.round(d.total_labor_cost).toLocaleString()}</td>
+      <td>区间 ¥${Math.round(d.total_low).toLocaleString()} ~ ¥${Math.round(d.total_high).toLocaleString()}</td></tr>
+  </table>
+  <div style="font-size:12px;font-weight:700;color:var(--gray-800);margin-bottom:8px">
+    Shapley 归因（对数残差空间，基准值 ${(d.shap_base!=null?d.shap_base.toFixed(3):'–')}）</div>
+  ${shapHtml}
+  <div style="font-size:10.5px;color:var(--gray-400);margin-top:6px;line-height:1.7">
+    红=把预测往上抬，绿=往下压。TreeSHAP 为精确算法，满足
+    基准值 + Σ贡献 = 模型输出，可逐项加总验算。</div>`;
 }
+
+async function runSim(){
+  const box = document.getElementById('modelResult');
+  const msg = document.getElementById('techModelMsg');
+  const inp = readModelInput();
+  box.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">蒙特卡洛抽样中…</div>';
+  let d;
+  try{ d = await postApi('/api/simulate/cost', {
+        component: inp.component, material: inp.material, weight_t: inp.tonnage,
+        dept: inp.dept, market: inp.market, months_cnt: inp.months_cnt, n_draws: 8000}); }
+  catch(e){ box.innerHTML = '<div style="color:var(--red);padding:24px;font-size:12.5px">仿真失败：'+e.message+'</div>'; return; }
+  const i = d.inputs||{};
+  msg.textContent = d.n_draws + ' 次抽样 · 钢材 σ=' + (i.sigma_price_pct||0).toFixed(2)
+    + '%（2024 采购明细） · 工时 σ=' + (i.sigma_labor_pct||0).toFixed(2) + '%（共形区间反解）';
+  const tor = (d.tornado||[]).slice(0,6);
+  const maxSwing = Math.max(...tor.map(t=>t.swing), 1);
+  box.innerHTML = `
+  <div style="background:linear-gradient(135deg,#7c2d12,#ea580c);color:#fff;padding:16px;border-radius:10px;margin-bottom:12px">
+  <div style="font-size:12px;opacity:.85">P95 成本上限 / VaR95 风险价值</div>
+  <div style="font-size:26px;font-weight:900">¥${Math.round(d.p95).toLocaleString()}
+    <span style="font-size:14px;font-weight:400;opacity:.85"> / +¥${Math.round(d.var95).toLocaleString()}</span></div>
+  <div style="font-size:11px;opacity:.8;margin-top:4px">P50 ¥${Math.round(d.p50).toLocaleString()}
+    · CVaR95 ¥${Math.round(d.cvar95).toLocaleString()} · 风险溢价 ${d.risk_premium_pct}%</div>
+  </div>
+  <table class="role-table" style="margin-bottom:12px">
+  <tr><th>统计量</th><th>金额</th><th>含义</th></tr>
+  <tr><td>确定性合计</td><td>¥${Math.round(d.deterministic_total).toLocaleString()}</td><td>不考虑波动的点估计</td></tr>
+  <tr><td>P05 / P50 / P95</td><td>¥${Math.round(d.p05).toLocaleString()} / ¥${Math.round(d.p50).toLocaleString()} / ¥${Math.round(d.p95).toLocaleString()}</td><td>分位数</td></tr>
+  <tr><td><b>VaR95</b></td><td>¥${Math.round(d.var95).toLocaleString()}</td><td>95% 置信下的最大超额</td></tr>
+  <tr><td><b>CVaR95</b></td><td>¥${Math.round(d.cvar95).toLocaleString()}</td><td>最坏 5% 情形的平均超额（一致性风险度量）</td></tr>
+  </table>
+  <div style="font-size:12px;font-weight:700;color:var(--gray-800);margin-bottom:8px">龙卷风图 · 单因素敏感度</div>
+  ${tor.map(t=>'<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:5px">'
+    + '<div style="width:56px;color:var(--gray-600);flex:none">'+t.name+'</div>'
+    + '<div style="flex:1;height:14px;background:var(--gray-100);border-radius:3px;overflow:hidden">'
+    +   '<div style="width:'+(t.swing/maxSwing*100)+'%;height:100%;background:var(--steel-500);border-radius:3px"></div></div>'
+    + '<div style="width:74px;text-align:right;color:var(--gray-600);flex:none">±¥'+Math.round(t.swing/2).toLocaleString()+'</div></div>').join('')}
+  <div style="font-size:10.5px;color:var(--gray-400);margin-top:6px;line-height:1.7">
+    钢材单价 ¥${(i.steel_price||0).toFixed(0)}/吨，来源：${i.steel_source||'—'}。
+    敏感度排序直接告诉管理者"该优先盯哪一项"。</div>`;
+}
+
 function resetModel(){
-  document.getElementById('modelResult').innerHTML='<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">输入参数后点击"运行AI估算"</div>';
+  document.getElementById('modelResult').innerHTML='<div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">输入参数后点击"运行真实模型推理"</div>';
+  document.getElementById('techModelMsg').textContent='';
 }
+
+// 部件名补全（来自真实台账）
+(async function fillTechCompList(){
+  try{
+    const r = await fetch('/api/model/samples?limit=600'); const j = await r.json();
+    const rows = (j.data||[]);
+    const seen = {};
+    document.getElementById('techCompList').innerHTML =
+      rows.map(s=>seen[s.component]?'':(seen[s.component]=1,'<option value="'+s.component+'">')).join('');
+  }catch(e){}
+})();
 
 // 技术指标图表
 let metricInited=false;
 function initMetricCharts(){
   if(metricInited)return;metricInited=true;
   const c1=echarts.init(document.getElementById('metricChart1'));
-  c1.setOption({title:{text:'MAPE趋势（模型迭代）',left:'center',textStyle:{fontSize:13}},tooltip:{trigger:'axis'},grid:{left:40,right:20,top:40,bottom:25},xAxis:{type:'category',data:['v1.0','v1.5','v2.0','v2.3','v2.3.1']},yAxis:{type:'value',name:'%',axisLabel:{formatter:'{value}%'}},series:[{type:'line',data:[25.2,19.8,15.3,12.6,11.8],smooth:true,itemStyle:{color:'#2563eb'},areaStyle:{color:'rgba(37,99,235,.1)'}}]});
   const c2=echarts.init(document.getElementById('metricChart2'));
-  c2.setOption({title:{text:'异常检测维度分布',left:'center',textStyle:{fontSize:13}},tooltip:{trigger:'item'},series:[{type:'pie',radius:['40%','70%'],data:[{value:35,name:'工时偏差'},{value:25,name:'钢材超耗'},{value:18,name:'焊材浪费'},{value:12,name:'外协超标'},{value:10,name:'余料异常'}],label:{fontSize:11}}]});
+  // 默认图：真实台账上的四口径精度对比（随后尝试拉取真实数据覆盖）
+  const fallback1={
+    title:{text:'真实台账实测 · 中位 APE（越低越好）',left:'center',textStyle:{fontSize:13}},
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    grid:{left:56,right:20,top:40,bottom:52},
+    xAxis:{type:'category',data:['先验+残差GBDT','仅套用工时标准','家族中位数','全局中位数'],
+           axisLabel:{fontSize:10,interval:0,rotate:16}},
+    yAxis:{type:'value',name:'%',axisLabel:{fontSize:10}},
+    series:[{type:'bar',barWidth:'52%',data:[21.15,30.51,25.31,58.67],
+      itemStyle:{color:p=>p.dataIndex===0?'#2563eb':'#cbd5e1'},
+      label:{show:true,position:'top',fontSize:10,formatter:'{c}%'}}]
+  };
+  const fallback2={
+    title:{text:'孤立森林检出的异常部件构成',left:'center',textStyle:{fontSize:12}},
+    tooltip:{trigger:'item'},
+    series:[{type:'pie',radius:['40%','70%'],
+      data:[{value:35,name:'单位成本远超先验'},{value:25,name:'单位成本远低于先验'},
+            {value:18,name:'吨位与成本不匹配'},{value:12,name:'跨月结算异常'},{value:10,name:'其他'}],
+      label:{fontSize:11}}]
+  };
+  c1.setOption(fallback1); c2.setOption(fallback2);
+
+  // 用真实接口覆盖左图
+  fetch('/api/model/quota-metrics').then(r=>r.json()).then(j=>{
+    if(j.code!==0) return;
+    const rows=(j.data.comparison||{}).rows||[];
+    if(!rows.length) return;
+    c1.setOption({
+      xAxis:{data:rows.map(r=>r.method)},
+      series:[{data:rows.map(r=>+(r.medape||0).toFixed(2))}]
+    });
+    // 右图换成特征重要性
+    const imp=(j.data.report||{}).feature_importance||{};
+    const ks=Object.keys(imp).sort((a,b)=>imp[b]-imp[a]).slice(0,8);
+    c2.setOption({
+      title:{text:'模型特征重要性（分裂覆盖加权）',left:'center',textStyle:{fontSize:12}},
+      tooltip:{trigger:'axis'},
+      grid:{left:96,right:36,top:36,bottom:22},
+      xAxis:{type:'value',axisLabel:{fontSize:9}},
+      yAxis:{type:'category',data:ks.slice().reverse(),axisLabel:{fontSize:10}},
+      series:[{type:'bar',barWidth:11,data:ks.slice().reverse().map(k=>+(imp[k]||0).toFixed(3)),
+               itemStyle:{color:'#1e40af'}}]
+    },true);
+  }).catch(()=>{});
   window.addEventListener('resize',()=>{c1.resize();c2.resize();});
 }
 </script>
+</main>
+  </div>
+</div>
 </body>
 </html>

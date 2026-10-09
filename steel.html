@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 钢材行情与比价</title>
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
+<script src="shared/static-api.js"></script>
+<script src="shared/echarts.min.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
+<script src="shared/app.js?v=20261005d"></script>
+<style>
+.legend-inline{font-size:11.5px;color:var(--gray-500);line-height:1.8}
+.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.scroll-box{max-height:400px;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
+</div>
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item" href="data.html">数据底座</a>
+<a class="app-sider-item" href="brain.html">智能决策中心</a>
+<a class="app-sider-item" href="project.html">项目挣值管控</a>
+<a class="app-sider-item active" href="steel.html">钢材行情</a>
+<a class="app-sider-item" href="eval.html">效果评价</a>
+<a class="app-sider-item" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>钢材行情</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title">钢材行情与比价 <span class="page-badge">EWMA 统计过程控制</span></div>
+    <div class="page-subtitle">价格波动直接进入成本模型的蒙特卡洛仿真；比价异常直接生成内审线索</div>
+  </div>
+
+  <div class="nv-note">
+    <b>两条用途。</b>① <b>报价与预算</b>：材料费占非标构件成本 55%~70%，单价标准差必须来自企业自己的采购分布，
+    而不是网上查的行业均价——本页均价按<b>采购量加权</b>计算，避免"小批量高价订单"把均价拉偏。
+    ② <b>过程控制</b>：用 <b>EWMA 控制图</b>监控月度均价，EWMA 对<b>小幅持续漂移</b>的灵敏度远高于普通 X̄ 图，
+    钢材涨价往往是缓慢爬升而非单月跳涨，这正是选它的原因。超限点自动标红，可一键转为采购核查任务。
+  </div>
+
+  <div class="nv-grid4" id="kpiRow">
+    <div class="nv-kpi"><div class="lb">2024 采购总量</div><div class="vl" id="kVol">—</div><div class="sub" id="kVolSub">—</div></div>
+    <div class="nv-kpi"><div class="lb">采购总金额</div><div class="vl" id="kAmt">—</div><div class="sub" id="kAmtSub">—</div></div>
+    <div class="nv-kpi"><div class="lb">量加权均价（含税）</div><div class="vl" id="kAvg">—</div><div class="sub" id="kAvgSub">—</div></div>
+    <div class="nv-kpi"><div class="lb">月度对数收益波动率</div><div class="vl" id="kVol2">—</div><div class="sub">直接作为蒙特卡洛 σ 输入</div></div>
+  </div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">月度量加权均价 · EWMA 控制图</div>
+      <div id="chEwma" class="nv-chart"></div>
+      <div class="legend-inline">
+        <i style="background:#2563eb"></i>月度实际均价
+        <i style="background:#16a34a"></i>EWMA 统计量 Z<sub>t</sub>
+        <i style="background:#dc2626"></i>上控制限 UCL / 下控制限 LCL（L=3σ）
+        <i style="background:#94a3b8"></i>中心线 CL
+      </div>
+      <div class="nv-src" id="ewmaSrc"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">月度采购量 vs 均价（量价双轴）</div>
+      <div id="chVol" class="nv-chart"></div>
+      <div class="nv-src">把"买得多不多"和"贵不贵"叠在一张图上，可以识别量价背离：采购量放大而均价下行，通常是议价窗口；反之则是被动追高。</div>
+    </div>
+  </div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">主要牌号采购均价（含税 / 不含税，按采购量取前 14）</div>
+      <div id="chGrade" class="nv-chart"></div>
+      <div class="nv-src">成本模型使用<b>含税价</b>（与结算口径一致），不含税价用于税务与毛利测算。</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">材料类别相对钢板的价差倍数</div>
+      <div id="chClass" class="nv-chart-sm"></div>
+      <div class="nv-src" id="classSrc"></div>
+    </div>
+  </div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">分材质明细（企业真实成交价）</div>
+      <div class="scroll-box">
+        <table class="nv-tbl" id="tblMat">
+          <thead><tr>
+            <th>牌号</th><th>类别</th><th style="text-align:right">采购量(t)</th>
+            <th style="text-align:right">订单</th><th style="text-align:right">含税(元/t)</th>
+            <th style="text-align:right">不含税(元/t)</th>
+          </tr></thead>
+          <tbody><tr><td colspan="6" class="nv-loading">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">比价异常订单 TOP 20（同牌号 z 值偏离）</div>
+      <div class="scroll-box">
+        <table class="nv-tbl" id="tblOut">
+          <thead><tr>
+            <th>品名 / 规格</th><th>牌号</th><th>日期</th>
+            <th style="text-align:right">单价(元/kg)</th><th style="text-align:right">同牌号均价</th>
+            <th style="text-align:right">z</th><th style="text-align:right">金额</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="nv-loading">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="nv-src">z = (订单单价 − 同牌号量加权均价) / 同牌号价格标准差。z&gt;3 即统计意义上的异常，
+      是采购舞弊、规格错录或紧急采购溢价的第一手线索。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var cEwma, cVol, cGrade, cClass;
+
+  function $(id) { return document.getElementById(id); }
+  function fmt(v, d) { if (v === null || v === undefined || isNaN(v)) return '—'; return Number(v).toFixed(d === undefined ? 1 : d); }
+  function kfmt(v) { if (v === null || v === undefined || isNaN(v)) return '—'; return Number(v).toLocaleString('zh-CN'); }
+  function wan(v) { if (v === null || v === undefined || isNaN(v)) return '—'; return (v / 1e4).toFixed(1); }
+  function small(v, u) { return fmt(v, 1) + '<small>' + (u || '') + '</small>'; }
+  function api(p) {
+    return fetch(p).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.code === 0) return j.data;
+      throw new Error((j && j.message) || '接口异常');
+    });
+  }
+  function mk(el) { return el ? echarts.init(el) : null; }
+  window.addEventListener('resize', function () {
+    [cEwma, cVol, cGrade, cClass].forEach(function (c) { if (c) c.resize(); });
+  });
+
+  function load() {
+    Promise.all([
+      api('/api/steel/monthly'),
+      api('/api/steel/materials'),
+      api('/api/steel/outliers?top=20')
+    ]).then(function (res) {
+      var mo = res[0], mt = res[1], out = res[2];
+      var st = mo.stats || {};
+      $('kVol').innerHTML = small(st.total_volume_ton / 1000, ' 千吨');
+      $('kVolSub').textContent = (mo.months || []).length + ' 个月 · ' + kfmt((mo.months || []).reduce(function (a, b) { return a + (b.orders || 0); }, 0)) + ' 张订单';
+      $('kAmt').innerHTML = wan(st.total_amount) + '<small> 万元</small>';
+      $('kAmtSub').textContent = '含税口径';
+      $('kAvg').innerHTML = kfmt(st.avg) + '<small> 元/吨</small>';
+      $('kAvgSub').textContent = '区间 ' + kfmt(st.min) + ' ~ ' + kfmt(st.max) + '，σ=' + kfmt(st.std);
+      $('kVol2').innerHTML = fmt(st.monthly_return_vol_pct, 2) + '<small>%</small>';
+      $('kVol2').style.color = st.monthly_return_vol_pct > 15 ? '#dc2626' : '#16a34a';
+
+      drawEwma(mo);
+      drawVol(mo);
+      drawGrade(mt.rows || []);
+      drawClass(mt.class_ratio || {});
+      drawMatTable(mt.rows || []);
+      drawOutTable(out || []);
+    }).catch(function (e) { console.warn(e); });
+  }
+
+  function drawEwma(mo) {
+    cEwma = cEwma || mk($('chEwma'));
+    var ew = mo.ewma || {}, ms = mo.months || [];
+    if (!cEwma || !ms.length) return;
+    var xs = ms.map(function (m) { return m.month + '月'; });
+    var alarms = ew.alarms || [];
+    var pts = alarms.map(function (a) {
+      return { coord: [a.index, a.value], itemStyle: { color: '#dc2626' } };
+    });
+    cEwma.setOption({
+      tooltip: { trigger: 'axis', valueFormatter: function (v) { return fmt(v, 0) + ' 元/吨'; } },
+      legend: { data: ['月度均价', 'EWMA Z', 'UCL', 'CL', 'LCL'], bottom: 0, textStyle: { fontSize: 10 } },
+      grid: { left: 66, right: 24, top: 18, bottom: 42 },
+      xAxis: { type: 'category', data: xs, axisLabel: { fontSize: 10 } },
+      yAxis: { type: 'value', name: '元/吨', scale: true, axisLabel: { fontSize: 10 } },
+      series: [
+        { name: '月度均价', type: 'line', data: ms.map(function (m) { return m.price; }),
+          lineStyle: { color: '#93c5fd', width: 1.5 }, itemStyle: { color: '#2563eb' },
+          markPoint: pts.length ? { symbolSize: 46, data: pts,
+            label: { fontSize: 9, color: '#fff', formatter: '!' } } : undefined },
+        { name: 'EWMA Z', type: 'line', smooth: true, data: ew.z,
+          lineStyle: { color: '#16a34a', width: 2.5 }, itemStyle: { color: '#16a34a' } },
+        { name: 'UCL', type: 'line', data: ew.ucl, showSymbol: false,
+          lineStyle: { color: '#dc2626', width: 1.5, type: 'dashed' }, itemStyle: { color: '#dc2626' } },
+        { name: 'CL', type: 'line', data: xs.map(function () { return ew.center; }), showSymbol: false,
+          lineStyle: { color: '#94a3b8', width: 1.2 }, itemStyle: { color: '#94a3b8' } },
+        { name: 'LCL', type: 'line', data: ew.lcl, showSymbol: false,
+          lineStyle: { color: '#dc2626', width: 1.5, type: 'dashed' }, itemStyle: { color: '#dc2626' } }
+      ]
+    }, true);
+    var txt = 'EWMA 参数：λ=' + ew.lambda + '，L=' + ew.L + '，基线窗口 ' + ew.baseline_window
+      + ' 期，中心线 CL=' + fmt(ew.center, 0) + ' 元/吨，σ=' + fmt(ew.sigma, 1) + '。';
+    if (alarms.length) {
+      txt += ' <b style="color:#dc2626">检出 ' + alarms.length + ' 个失控点</b>：'
+        + alarms.map(function (a) {
+            return (a.index + 1) + '月（' + (a.type === 'high' ? '突破上限' : '跌破下限')
+              + '，z=' + fmt(a.z, 0) + '）';
+          }).join('、') + '。';
+    } else {
+      txt += ' 全年未检出失控点。';
+    }
+    $('ewmaSrc').innerHTML = txt;
+  }
+
+  function drawVol(mo) {
+    cVol = cVol || mk($('chVol'));
+    var ms = mo.months || [];
+    if (!cVol || !ms.length) return;
+    cVol.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['采购量', '均价'], bottom: 0, textStyle: { fontSize: 10 } },
+      grid: { left: 66, right: 62, top: 18, bottom: 42 },
+      xAxis: { type: 'category', data: ms.map(function (m) { return m.month + '月'; }), axisLabel: { fontSize: 10 } },
+      yAxis: [
+        { type: 'value', name: '吨', axisLabel: { fontSize: 10 } },
+        { type: 'value', name: '元/吨', scale: true, axisLabel: { fontSize: 10 }, splitLine: { show: false } }
+      ],
+      series: [
+        { name: '采购量', type: 'bar', data: ms.map(function (m) { return m.volume_ton; }),
+          itemStyle: { color: '#bfdbfe' }, barWidth: '48%' },
+        { name: '均价', type: 'line', yAxisIndex: 1, smooth: true,
+          data: ms.map(function (m) { return m.price; }),
+          lineStyle: { color: '#ea580c', width: 2.5 }, itemStyle: { color: '#ea580c' } }
+      ]
+    }, true);
+  }
+
+  function drawGrade(rows) {
+    cGrade = cGrade || mk($('chGrade'));
+    if (!cGrade || !rows.length) return;
+    var top = rows.slice().sort(function (a, b) { return b.volume_ton - a.volume_ton; }).slice(0, 14);
+    cGrade.setOption({
+      tooltip: { trigger: 'axis', valueFormatter: function (v) { return fmt(v, 0) + ' 元/吨'; } },
+      legend: { data: ['含税', '不含税'], bottom: 0, textStyle: { fontSize: 10 } },
+      grid: { left: 62, right: 24, top: 18, bottom: 44 },
+      xAxis: { type: 'category', data: top.map(function (r) { return r.grade; }),
+               axisLabel: { fontSize: 10, interval: 0, rotate: 28 } },
+      yAxis: { type: 'value', name: '元/吨', axisLabel: { fontSize: 10 } },
+      series: [
+        { name: '含税', type: 'bar', data: top.map(function (r) { return r.price_inc_tax_per_ton; }), itemStyle: { color: '#2563eb' } },
+        { name: '不含税', type: 'bar', data: top.map(function (r) { return r.price_ex_tax_per_ton; }), itemStyle: { color: '#bfdbfe' } }
+      ]
+    }, true);
+  }
+
+  function drawClass(ratio) {
+    cClass = cClass || mk($('chClass'));
+    var ks = Object.keys(ratio);
+    if (!cClass || !ks.length) return;
+    var data = ks.map(function (k) {
+      return { name: k, value: ratio[k],
+               itemStyle: { color: ratio[k] > 1.3 ? '#dc2626' : (ratio[k] > 1.0 ? '#f59e0b' : '#16a34a') } };
+    }).sort(function (a, b) { return b.value - a.value; });
+    cClass.setOption({
+      tooltip: { trigger: 'axis', valueFormatter: function (v) { return fmt(v, 3) + ' ×钢板'; } },
+      grid: { left: 90, right: 50, top: 14, bottom: 24 },
+      xAxis: { type: 'value', name: '倍数', axisLabel: { fontSize: 10 } },
+      yAxis: { type: 'category', data: data.map(function (d) { return d.name; }).reverse(), axisLabel: { fontSize: 10 } },
+      series: [{ type: 'bar', barWidth: 13, data: data.slice().reverse(),
+                 label: { show: true, position: 'right', fontSize: 10, formatter: '{c}×' } }]
+    }, true);
+    $('classSrc').innerHTML = '倍数 = 该类别量加权均价 ÷ 钢板量加权均价。成本模型在按重量估算材料费时，'
+      + '会用此系数把"同样是 1 吨钢"修正成真实的类别价格，避免型钢、钢管被按钢板价低估。';
+  }
+
+  function drawMatTable(rows) {
+    var tb = $('tblMat').querySelector('tbody'), html = '';
+    rows.slice().sort(function (a, b) { return b.volume_ton - a.volume_ton; }).forEach(function (r) {
+      html += '<tr><td><b>' + r.grade + '</b></td><td>' + (r.mat_class || '—') + '</td>'
+        + '<td class="num">' + fmt(r.volume_ton, 1) + '</td>'
+        + '<td class="num">' + r.orders + '</td>'
+        + '<td class="num">' + kfmt(r.price_inc_tax_per_ton) + '</td>'
+        + '<td class="num">' + kfmt(r.price_ex_tax_per_ton) + '</td></tr>';
+    });
+    tb.innerHTML = html || '<tr><td colspan="6" class="nv-loading">无数据</td></tr>';
+  }
+
+  function drawOutTable(rows) {
+    var tb = $('tblOut').querySelector('tbody'), html = '';
+    rows.forEach(function (r) {
+      var cls = r.z > 5 ? 'nv-bad' : (r.z > 3 ? 'nv-warn' : 'nv-info');
+      html += '<tr><td><b>' + r.item + '</b><br><span style="color:#9ca3af">' + r.spec + '</span></td>'
+        + '<td>' + r.grade + '</td><td>' + r.date + '</td>'
+        + '<td class="num">' + fmt(r.price_inc_tax, 2) + '</td>'
+        + '<td class="num">' + fmt(r.group_mean, 2) + '</td>'
+        + '<td class="num"><span class="nv-tag ' + cls + '">' + fmt(r.z, 2) + '</span></td>'
+        + '<td class="num">' + fmt(r.amount, 0) + '</td></tr>';
+    });
+    tb.innerHTML = html || '<tr><td colspan="7" class="nv-loading">无数据</td></tr>';
+  }
+
+  load();
+})();
+</script>
+</main>
+  </div>
+</div>
+</body>
+</html>

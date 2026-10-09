@@ -786,6 +786,19 @@ function openOrderDetail(ordId) {
   }
 }
 
+var OD_ICONS = {
+  budget: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+  actual: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  rate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+  progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+  material: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+  deviation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  steel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18H4z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>',
+  labor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  fixed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>',
+  other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>'
+};
+
 function _openOrderDetailImpl(ordId) {
   var o = getOrderById(ordId);
   if (!o) {
@@ -809,26 +822,29 @@ function _openOrderDetailImpl(ordId) {
 
   var html = '';
   html += '<div class="od-kpi-grid">' +
-    '<div class="od-kpi"><div class="od-kpi-label">预算</div><div class="od-kpi-val">' + o.budget + '<span>万</span></div></div>' +
-    '<div class="od-kpi"><div class="od-kpi-label">已归集</div><div class="od-kpi-val">' + o.actual + '<span>万</span></div></div>' +
-    '<div class="od-kpi"><div class="od-kpi-label">成本消耗率</div><div class="od-kpi-val">' + rate + '<span>%</span></div></div>' +
-    '<div class="od-kpi"><div class="od-kpi-label">生产完成度</div><div class="od-kpi-val">' + o.progress + '<span>%</span></div></div>' +
-    '<div class="od-kpi"><div class="od-kpi-label">领料进度</div><div class="od-kpi-val">' + o.material + '<span>%</span></div></div>' +
-    '<div class="od-kpi"><div class="od-kpi-label">偏离度</div><div class="od-kpi-val ' + orderDevClass(o) + '">' +
+    '<div class="od-kpi blue"><div class="od-kpi-label">' + OD_ICONS.budget + '预算</div><div class="od-kpi-val">' + o.budget + '<span>万</span></div></div>' +
+    '<div class="od-kpi blue"><div class="od-kpi-label">' + OD_ICONS.actual + '已归集</div><div class="od-kpi-val">' + o.actual + '<span>万</span></div></div>' +
+    '<div class="od-kpi amber"><div class="od-kpi-label">' + OD_ICONS.rate + '成本消耗率</div><div class="od-kpi-val">' + rate + '<span>%</span></div></div>' +
+    '<div class="od-kpi blue"><div class="od-kpi-label">' + OD_ICONS.progress + '生产完成度</div><div class="od-kpi-val">' + o.progress + '<span>%</span></div></div>' +
+    '<div class="od-kpi green"><div class="od-kpi-label">' + OD_ICONS.material + '领料进度</div><div class="od-kpi-val">' + o.material + '<span>%</span></div></div>' +
+    '<div class="od-kpi red"><div class="od-kpi-label">' + OD_ICONS.deviation + '偏离度</div><div class="od-kpi-val ' + orderDevClass(o) + '">' +
       (dev > 0 ? '+' : '') + dev + '<span>%</span></div></div>' +
     '</div>';
 
   html += '<div class="od-section-title">料 · 工 · 费（部件测算合计）</div>';
   html += '<div class="od-cost-row od-cost-row-4">' +
-    '<div class="od-cost-card"><div class="od-cost-name">料（直接材料）</div><div class="od-cost-amt">' + fmtMoney(cost.steel) +
+    '<div class="od-cost-card"><div class="od-cost-name">' + OD_ICONS.steel + '料（直接材料）</div><div class="od-cost-amt">' + fmtMoney(cost.steel) +
       '</div><div class="od-cost-pct">' + pct(cost.steel) + '%</div></div>' +
-    '<div class="od-cost-card"><div class="od-cost-name">工（直接人工）</div><div class="od-cost-amt">' + fmtMoney(cost.labor) +
+    '<div class="od-cost-card labor"><div class="od-cost-name">' + OD_ICONS.labor + '工（直接人工）</div><div class="od-cost-amt">' + fmtMoney(cost.labor) +
       '</div><div class="od-cost-pct">' + pct(cost.labor) + '%</div></div>' +
-    '<div class="od-cost-card"><div class="od-cost-name">费（固定分摊）</div><div class="od-cost-amt">' + fmtMoney(cost.fixedShare) +
+    '<div class="od-cost-card fixed"><div class="od-cost-name">' + OD_ICONS.fixed + '费（固定分摊）</div><div class="od-cost-amt">' + fmtMoney(cost.fixedShare) +
       '</div><div class="od-cost-pct">' + pct(cost.fixedShare) + '%</div></div>' +
-    '<div class="od-cost-card"><div class="od-cost-name">其他（外协等）</div><div class="od-cost-amt">' + fmtMoney(cost.other) +
+    '<div class="od-cost-card other"><div class="od-cost-name">' + OD_ICONS.other + '其他（外协等）</div><div class="od-cost-amt">' + fmtMoney(cost.other) +
       '</div><div class="od-cost-pct">' + pct(cost.other) + '%</div></div>' +
     '</div>';
+  html += '<div class="od-cost-pie-title">成本构成占比</div>';
+  html += '<div id="odCostPie" style="height:180px"></div>';
+
   html += '<div class="od-cost-note">部件测算合计 ' + fmtMoney(cost.total) +
     '（约 ' + totalWan + ' 万），仅覆盖当前关联部件定额测算，与上方「已归集」订单财务口径不同。</div>';
 
@@ -904,6 +920,31 @@ function _openOrderDetailImpl(ordId) {
   odBody.innerHTML = html;
   mask.classList.add('open');
   document.body.style.overflow = 'hidden';
+  /* 抽屉成本构成环形图（真实料工费占比）——等抽屉显示后再初始化，避免 canvas 0 宽 */
+  setTimeout(function () {
+    var pieDom = document.getElementById('odCostPie');
+    if (pieDom && window.echarts) {
+      if (window._odPieChart && window._odPieChart.dispose) window._odPieChart.dispose();
+      var pieChart = echarts.init(pieDom);
+      pieChart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
+        legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#64748b', fontSize: 11 } },
+        series: [{
+          type: 'pie', radius: ['45%', '68%'], center: ['50%', '42%'],
+          itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          data: [
+            { name: '料（直接材料）', value: pct(cost.steel), itemStyle: { color: '#2563eb' } },
+            { name: '工（直接人工）', value: pct(cost.labor), itemStyle: { color: '#38bdf8' } },
+            { name: '费（固定分摊）', value: pct(cost.fixedShare), itemStyle: { color: '#14b8a6' } },
+            { name: '其他（外协等）', value: pct(cost.other), itemStyle: { color: '#94a3b8' } }
+          ]
+        }]
+      });
+      window._odPieChart = pieChart;
+      setTimeout(function () { pieChart.resize(); }, 260);
+    }
+  }, 80);
 }
 
 /** 事件委托：行 / 详情按钮 / 预警卡片 → 打开订单；部件行 → 展开明细 */
@@ -941,13 +982,20 @@ console.log('[智衡云] 共享数据层已加载，工单数量：' + DB.workOr
 
 // ========== 角色清单 + 右上角切换（企业财务台常见交互） ==========
 var ROLE_MENU = [
-  { id: 'home', name: '企业管理', short: '企', href: 'index.html', tag: '总览' },
-  { id: 'finance', name: '财务', short: '财', href: 'finance.html', tag: '核算' },
-  { id: 'craft', name: '工艺定额', short: '定', href: 'craft.html', tag: '事前' },
-  { id: 'workshop', name: '车间', short: '车', href: 'workshop.html', tag: '事中' },
-  { id: 'purchase', name: '采购', short: '采', href: 'purchase.html', tag: '事中' },
-  { id: 'audit', name: '内审', short: '审', href: 'audit.html', tag: '事后' },
-  { id: 'site', name: '现场', short: '现', href: 'site.html', tag: '现场' }
+  { id: 'home', name: '企业管理', short: '企', href: 'index.html', tag: '总览',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>' },
+  { id: 'finance', name: '财务', short: '财', href: 'finance.html', tag: '核算',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+  { id: 'craft', name: '工艺定额', short: '定', href: 'craft.html', tag: '事前',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>' },
+  { id: 'workshop', name: '车间', short: '车', href: 'workshop.html', tag: '事中',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>' },
+  { id: 'purchase', name: '采购', short: '采', href: 'purchase.html', tag: '事中',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>' },
+  { id: 'audit', name: '内审', short: '审', href: 'audit.html', tag: '事后',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>' },
+  { id: 'site', name: '现场', short: '现', href: 'site.html', tag: '现场',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>' }
 ];
 
 function detectCurrentRoleId() {
@@ -969,11 +1017,10 @@ function getRoleById(id) {
 function renderRoleSwitcherHtml(currentId) {
   var curId = currentId || detectCurrentRoleId();
   var html = '<div class="role-panel-box" id="roleSwitcher" title="切换业务角色">' +
-    '<span class="role-panel-label">角色</span>' +
     '<div class="role-panel-list">';
   ROLE_MENU.forEach(function(r) {
     var cls = r.id === curId ? 'role-pill current' : 'role-pill';
-    html += '<a class="' + cls + '" href="' + r.href + '" title="' + r.name + '"><i class="role-pill-ico">' + r.short + '</i>' + r.name + '</a>';
+    html += '<a class="' + cls + '" href="' + r.href + '" title="' + r.name + '"><i class="role-pill-ico">' + (r.icon || r.short) + '</i>' + r.name + '</a>';
   });
   html += '</div></div>';
   return html;
@@ -995,4 +1042,25 @@ function mountRoleSwitcher(targetSelector, currentId) {
 document.addEventListener('DOMContentLoaded', function() {
   var slot = document.getElementById('roleSwitcherSlot');
   if (slot) mountRoleSwitcher(slot, slot.getAttribute('data-role') || detectCurrentRoleId());
+});
+
+// ========== 说明小问号：点击弹出说明气泡（页面用 <span class="hint-q" data-tip="说明">?</span>） ==========
+document.addEventListener('click', function (e) {
+  var open = document.querySelector('.hint-pop');
+  if (open) open.parentNode.removeChild(open);
+  var q = e.target;
+  while (q && q !== document && !(q.classList && q.classList.contains('hint-q'))) q = q.parentNode;
+  if (!q || q === document) return;
+  var tip = q.getAttribute('data-tip');
+  if (!tip) return;
+  var pop = document.createElement('div');
+  pop.className = 'hint-pop';
+  pop.textContent = tip;
+  var rect = q.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 296)) + 'px';
+  pop.style.top = (rect.bottom + 6) + 'px';
+  pop.style.zIndex = '9999';
+  document.body.appendChild(pop);
+  e.stopPropagation();
 });

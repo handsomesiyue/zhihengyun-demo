@@ -12,6 +12,7 @@
   // 静态演示站：流转动作留给 app.js 的 localStorage 实现
   if (window.STATIC_DEMO) return;
 
+
   var BASE = '';
   var online = false;
 

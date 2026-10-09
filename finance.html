@@ -4,19 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 财务</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js?v=20260929od3"></script>
-<script src="shared/app.js?v=20260929od3"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
 <div class="app-shell">
   <aside class="app-sider">
     <div class="app-sider-brand">
-      <div class="app-sider-logo">衡</div>
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
       <div>
         <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
       </div>
     </div>
     <nav class="app-sider-nav">
@@ -31,13 +33,13 @@
   <div class="app-body">
     <header class="app-header">
       <div class="app-header-left">
-        <div class="app-header-crumb">功能 / <b>财务核算</b></div>
+        <div class="app-header-crumb"><b>财务核算</b></div>
       </div>
       <div class="app-header-right">
         <div class="app-header-meta">
-          <span>2026-09</span>
-          <span class="sep"></span>
           <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
         </div>
         <div id="roleSwitcherSlot" data-role="finance"></div>
       </div>
@@ -55,7 +57,7 @@
       </div>
 
       <div class="role-panel" id="panel-diff">
-        <div class="role-section-title">预算与完成度对照（按成本中心 · 2026年9月）</div>
+        <div class="role-section-title">预算与完成度对照（按成本中心 · 2026年10月）</div>
         <div class="two-col" style="margin-bottom:16px">
           <div>
             <table class="role-table">
@@ -103,10 +105,10 @@ function renderFinance() {
   var highSign = DB.riskAlerts.filter(function(a) { return a.level === 'high' && a.status === 'open'; }).length;
 
   document.getElementById('finKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">在制订单</div><div class="rk-value">' + k.orderCount + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">预算消耗率</div><div class="rk-value">' + k.costRate + '%</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">偏离预警</div><div class="rk-value" style="color:#dc2626">' + k.alertCount + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">待过账 / 已过账</div><div class="rk-value">' + pending.length + ' / ' + posted.length + '</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">在制订单</div><div class="rk-value">' + k.orderCount + '</div><div class="rk-sub">在制订单数</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">预算消耗率</div><div class="rk-value">' + k.costRate + '%</div><div class="rk-sub">已归集金额 / 预算金额</div></div>' +
+    '<div class="role-kpi-card red"><div class="rk-label">偏离预警</div><div class="rk-value">' + k.alertCount + '</div><div class="rk-sub">异常预警数</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">待过账 / 已过账</div><div class="rk-value">' + pending.length + ' / ' + posted.length + '</div><div class="rk-sub">过账处理进度</div></div>';
 
   document.getElementById('orderOverview').innerHTML = renderOrderTableHtml();
 

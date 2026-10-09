@@ -4,50 +4,65 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 工艺定额端</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div><div class="topbar-title">工艺定额</div></div>
-  </div>
-    <div class="topbar-right">
-    <span>2026-09</span>
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <div id="roleSwitcherSlot" data-role="craft"></div>
-  </div>
-</div>
-<div class="role-layout">
-  <div class="role-sidebar">
-    <div class="role-sidebar-title">功能</div>
-    <div class="role-nav-item active" onclick="switchNav(this,0)">待办队列</div>
-    <div class="role-nav-item" onclick="switchNav(this,1)">定额测算台</div>
-    <div class="role-nav-item" onclick="switchNav(this,2)">已下达定额</div>
-    <div class="role-nav-item" onclick="switchNav(this,3)">测算反馈</div>
-    <div class="role-nav-item" onclick="switchNav(this,4)">工程图识别</div>
-  </div>
-  <div class="role-main">
-    <div class="role-page-head">
-      <div class="role-page-title">工艺定额工作台</div>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
     </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">待办队列</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">定额测算台</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">已下达定额</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">测算反馈</div>
+      <div class="app-sider-item" onclick="switchNav(this,4)">工程图识别</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb"><b>工艺定额</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="craft"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="role-page-head">
+        <div class="role-page-title">工艺定额工作台</div>
+      </div>
     <div class="role-kpi-grid" id="craftKpi"></div>
 
     <!-- 待办队列 -->
     <div class="role-panel" id="panel-todo">
-      <div class="role-section-title">待办队列（按把握程度排序）</div>
+      <div class="role-section-title">待办队列 <span class="hint-q" data-tip="按把握程度排序：把握度越高的工单越靠前">?</span></div>
       <div id="todoList"></div>
     </div>
 
     <!-- 定额测算台 -->
     <div class="role-panel" id="panel-calc">
-      <div class="role-section-title">定额测算台</div>
+      <div class="role-section-title">定额测算台 <span class="hint-q" data-tip="在待办队列中点击「测算」，选择工单后在此查看测算明细">?</span></div>
       <div id="calcDetail">
-        <div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">请在待办队列中点击「测算」，选择工单进行定额测算</div>
+        <div style="text-align:center;color:var(--gray-400);padding:40px 20px;font-size:13px">暂无测算中的工单</div>
       </div>
     </div>
 
@@ -69,23 +84,21 @@
       <div class="recog-card">
         <div class="upload-zone" id="craftUploadZone" onclick="document.getElementById('craftFileInput').click()">
           <input type="file" id="craftFileInput" accept="image/*,.pdf" style="display:none" onchange="craftHandleFile(this)">
-          <div class="upload-text" style="font-size:14px;font-weight:700;color:var(--gray-700)">点击上传工程图（PDF/图片）</div>
-          <div class="upload-hint">上传的图纸会送到后端执行真实识别管线：渲染 → 表格检测 → OCR → 自洽校验</div>
+          <div class="upload-text" style="font-size:14px;font-weight:700;color:var(--gray-700)">点击上传工程图（PDF/图片）<span class="hint-q" data-tip="上传的图纸将送到后端执行真实识别管线：渲染 → 表格检测 → OCR → 自洽校验">?</span></div>
         </div>
-        <div id="craftRecogResult" style="margin-top:12px">
-          <div class="recog-empty">上传工程图后，识别结果将显示在这里</div>
-        </div>
+        <div id="craftRecogResult" style="margin-top:12px"></div>
       </div>
     </div>
+    </main>
   </div>
 </div>
 
 <script>
 function switchNav(el, idx) {
-  var items = document.querySelectorAll('.role-nav-item');
+  var items = document.querySelectorAll('.app-sider-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   el.classList.add('active');
-  var panels = document.querySelectorAll('.role-main .role-panel');
+  var panels = document.querySelectorAll('.app-content .role-panel');
   if (panels[idx]) {
     panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
   } else {
@@ -102,10 +115,10 @@ function renderCraft() {
   var dispatched = DB.workOrders.filter(function(w){return w.status==='dispatched' || w.status==='in_production' || w.status==='completed' || w.status==='posted' || w.status==='done';}).length;
   var autoRate = DB.workOrders.length > 0 ? Math.round(DB.workOrders.filter(function(w){return w.confidence>=0.9;}).length / DB.workOrders.length * 100) : 0;
   document.getElementById('craftKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">待处理定额</div><div class="rk-value">' + pending + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">低置信待复核</div><div class="rk-value" style="color:#ea580c">' + review + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">今日已下达</div><div class="rk-value">' + dispatched + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">自动下达率</div><div class="rk-value" style="color:#16a34a">' + autoRate + '%</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">待处理定额</div><div class="rk-value">' + pending + '</div><div class="rk-sub">待测算 ' + pending + ' 项</div></div>' +
+    '<div class="role-kpi-card amber"><div class="rk-label">低置信待复核</div><div class="rk-value">' + review + '</div><div class="rk-sub">把握度 0.7-0.9 待复核</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">今日已下达</div><div class="rk-value">' + dispatched + '</div><div class="rk-sub">定额下达总数</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">自动下达率</div><div class="rk-value">' + autoRate + '%</div><div class="rk-sub">高置信自动测算</div></div>';
 
   // 待办队列
   var todos = DB.workOrders.filter(function(w){return w.stage==='craft';}).sort(function(a,b){return b.confidence - a.confidence;});
@@ -157,12 +170,12 @@ function renderCraft() {
   }
   document.getElementById('modelFeedback').innerHTML =
     '<div class="role-kpi-grid" style="margin-bottom:16px">' +
-    '<div class="role-kpi-card"><div class="rk-label">总工单数</div><div class="rk-value">' + total + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">自动下达(≥0.9)</div><div class="rk-value" style="color:#16a34a">' + auto + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">人工复核(0.7-0.9)</div><div class="rk-value" style="color:#ea580c">' + review + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">工程师接管(&lt;0.7)</div><div class="rk-value" style="color:#dc2626">' + low + '</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">总工单数</div><div class="rk-value">' + total + '</div><div class="rk-sub">全部已下达定额</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">自动下达(≥0.9)</div><div class="rk-value">' + auto + '</div><div class="rk-sub">高置信自动下达</div></div>' +
+    '<div class="role-kpi-card amber"><div class="rk-label">人工复核(0.7-0.9)</div><div class="rk-value">' + review + '</div><div class="rk-sub">需人工确认</div></div>' +
+    '<div class="role-kpi-card red"><div class="rk-label">工程师接管(&lt;0.7)</div><div class="rk-value">' + low + '</div><div class="rk-sub">低置信人工接管</div></div>' +
     '</div>' +
-    '<div class="role-kpi-card" style="margin-bottom:16px"><div class="rk-label">平均误差率（已完工工单对比）</div><div class="rk-value" style="color:#2563eb">' + avgError + '%</div><div style="font-size:11px;color:var(--gray-500);margin-top:4px">基于' + completedWithActual.length + '个已完工工单的实际工时 vs 预估工时</div></div>';
+    '<div class="role-kpi-card blue" style="margin-bottom:16px"><div class="rk-label">平均误差率（已完工工单对比）</div><div class="rk-value">' + avgError + '%</div><div class="rk-sub">已完工 ' + completedWithActual.length + ' 单 <span class="hint-q" data-tip="平均误差率 = |实际工时 − 预估工时| ÷ 预估工时，基于全部已完工工单计算">?</span></div></div>';
 }
 
 function openCalc(woId) {

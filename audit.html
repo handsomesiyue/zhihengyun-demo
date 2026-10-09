@@ -4,40 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 内审追溯端</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div><div class="topbar-title">内审追溯</div></div>
-  </div>
-    <div class="topbar-right">
-    <span>2026-09</span>
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <div id="roleSwitcherSlot" data-role="audit"></div>
-  </div>
-</div>
-<div class="role-layout">
-  <div class="role-sidebar">
-    <div class="role-sidebar-title">功能</div>
-    <div class="role-nav-item active" onclick="switchNav(this,0)">异常工单审核</div>
-    <div class="role-nav-item" onclick="switchNav(this,1)">全链路追溯</div>
-    <div class="role-nav-item" onclick="switchNav(this,2)">风险台账</div>
-    <div class="role-nav-item" onclick="switchNav(this,3)">审计报表</div>
-  </div>
-  <div class="role-main">
-    <div class="role-page-head">
-      <div class="role-page-title">内审追溯工作台</div>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
     </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">异常工单审核</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">全链路追溯</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">风险台账</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">审计报表</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb"><b>内审追溯</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="audit"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="role-page-head">
+        <div class="role-page-title">内审追溯工作台</div>
+      </div>
     <div class="role-kpi-grid" id="auditKpi"></div>
 
     <div class="role-panel" id="panel-anomaly">
-      <div class="role-section-title">异常工单审核（财务过账后推送）</div>
+      <div class="role-section-title">异常工单审核 <span class="hint-q" data-tip="财务过账后推送至内审">?</span></div>
       <div id="anomalyList"></div>
     </div>
 
@@ -50,28 +65,29 @@
     </div>
 
     <div class="role-panel" id="panel-risk">
-      <div class="role-section-title">风险台账 · 按四类风险归集</div>
+      <div class="role-section-title">风险台账 <span class="hint-q" data-tip="按四类风险归集：流程风险、数据风险、财税合规风险、人员与组织影响风险">?</span></div>
       <div class="role-kpi-grid" style="margin-bottom:14px" id="riskClassBox"></div>
       <div id="riskList"></div>
     </div>
 
     <div class="role-panel" id="panel-report">
-      <div class="role-section-title">审计报表</div>
+      <div class="role-section-title">审计报表 <span class="hint-q" data-tip="追溯链完整率：所有工单均保留「识别→测算→下达→开工→报工→过账→内审」全链路留痕；闭环要求：异常工单须完成根因分析并确认处置措施后方可闭环，审计底稿保留 5 年">?</span></div>
       <div class="role-kpi-grid" style="margin-bottom:16px" id="reportKpi"></div>
       <div style="background:var(--gray-50);border-radius:8px;padding:14px;font-size:12px;color:var(--gray-600);line-height:1.9" id="reportDetail">
       </div>
     </div>
 
     <div class="role-panel" id="rootcauseBox" style="display:none;border-left:4px solid #2563eb"></div>
+    </main>
   </div>
 </div>
 
 <script>
 function switchNav(el, idx) {
-  var items = document.querySelectorAll('.role-nav-item');
+  var items = document.querySelectorAll('.app-sider-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   el.classList.add('active');
-  var panels = document.querySelectorAll('.role-main .role-panel');
+  var panels = document.querySelectorAll('.app-content .role-panel');
   if (panels[idx]) {
     panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
   } else {
@@ -87,11 +103,11 @@ function renderAudit() {
   var abnormal = doneWOs.filter(function(w){return detectAnomalies(w).length>0;});
 
   document.getElementById('auditKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">待审核异常</div><div class="rk-value" style="color:#dc2626">' + posted.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">开放风险</div><div class="rk-value" style="color:#ea580c">' + openRisks.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">已闭环</div><div class="rk-value" style="color:#16a34a">' + closedRisks.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">异常率</div><div class="rk-value">' +
-      (doneWOs.length ? Math.round(abnormal.length/doneWOs.length*100) : 0) + '%</div></div>';
+    '<div class="role-kpi-card red"><div class="rk-label">待审核异常</div><div class="rk-value">' + posted.length + '</div><div class="rk-sub">待审核异常工单</div></div>' +
+    '<div class="role-kpi-card amber"><div class="rk-label">开放风险</div><div class="rk-value">' + openRisks.length + '</div><div class="rk-sub">进行中风险</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">已闭环</div><div class="rk-value">' + closedRisks.length + '</div><div class="rk-sub">已闭环风险</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">异常率</div><div class="rk-value">' +
+      (doneWOs.length ? Math.round(abnormal.length/doneWOs.length*100) : 0) + '%</div><div class="rk-sub">异常工单占比</div></div>';
 
   // 异常工单审核（带根因分析）
   var ahtml = '';
@@ -159,14 +175,12 @@ function renderReport(doneWOs, abnormal, openRisks, closedRisks) {
   var dist = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a];})
     .map(function(k){ return k + ' ' + Math.round(byType[k]/tot*100) + '%'; }).join(' · ') || '暂无';
   document.getElementById('reportKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">已完工工单</div><div class="rk-value">' + doneWOs.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">异常工单</div><div class="rk-value" style="color:#dc2626">' + abnormal.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">已闭环</div><div class="rk-value" style="color:#16a34a">' + closedRisks.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">处理中</div><div class="rk-value" style="color:#ea580c">' + openRisks.length + '</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">已完工工单</div><div class="rk-value">' + doneWOs.length + '</div><div class="rk-sub">已完工工单数</div></div>' +
+    '<div class="role-kpi-card red"><div class="rk-label">异常工单</div><div class="rk-value">' + abnormal.length + '</div><div class="rk-sub">异常工单数</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">已闭环</div><div class="rk-value">' + closedRisks.length + '</div><div class="rk-sub">已闭环风险</div></div>' +
+    '<div class="role-kpi-card amber"><div class="rk-label">处理中</div><div class="rk-value">' + openRisks.length + '</div><div class="rk-sub">处理中风险</div></div>';
   document.getElementById('reportDetail').innerHTML =
-    '<strong>异常类型分布：</strong>' + dist + '<br>' +
-    '<strong>追溯链完整率：</strong>所有工单均保留「识别→测算→下达→开工→报工→过账→内审」全链路留痕<br>' +
-    '<strong>闭环要求：</strong>异常工单须完成根因分析并确认处置措施后方可闭环，审计底稿保留 5 年';
+    '<strong>异常类型分布：</strong>' + dist;
 }
 
 async function renderTrace(woId) {

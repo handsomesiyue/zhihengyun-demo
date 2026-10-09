@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 成本总览</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js?v=20260930v2"></script>
-<script src="shared/app.js?v=20260930v2"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/echarts.min.js"></script>
 <style>
 /* ===== 看板页（路演样板 v2）专属细节 ===== */
@@ -30,7 +31,7 @@
   <div class="boot-grid"></div>
   <div class="boot-core">
     <div class="boot-logo">
-      <div class="boot-logo-mark">衡</div>
+      <div class="boot-logo-mark"><img src="shared/logo.png" alt="智衡云"></div>
       <div class="boot-title">智衡云</div>
     </div>
     <div class="boot-sub">ZHI HENG YUN · 非标作业智能成本管控体系</div>
@@ -50,7 +51,7 @@
   <!-- 左侧：功能导航 -->
   <aside class="app-sider">
     <div class="app-sider-brand">
-      <div class="app-sider-logo">衡</div>
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
       <div>
         <div class="app-sider-name">智衡云</div>
         <div class="app-sider-sub">非标作业智能成本管控</div>
@@ -64,12 +65,9 @@
       <div class="app-sider-item" data-view="alerts" onclick="switchView(this,'alerts')">偏离预警</div>
     </nav>
     <div class="app-sider-foot">
-      <a href="data.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>数据底座</span></a>
-      <a href="eval.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>效果评价</span></a>
-      <a href="tech.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>技术说明</span></a>
       <details class="sider-note">
         <summary>数据说明</summary>
-        <div class="sider-note-body">数据源自菲达 330MW 电除尘器 169 张真实工程图（OCR 管线还原 233 条 BOM）；工时 MAPE ≤ 12%（理论值，实测待数据到位）；演示数据可一键重置。</div>
+        <div class="sider-note-body">已接入菲达环保四类真实数据：330MW 电除尘器 169 张工程图（OCR 还原 233 条 BOM）、《2024工时标准（环保）》、《2024年工时台账》1041 条部件结算序列、2024 钢材采购明细 2099 行。定额模型在 471 条真实样本上按项目分组 5 折交叉验证，中位 APE 21.15%（直接套用工时标准为 30.51%）。演示工单数据可一键重置。</div>
       </details>
     </div>
   </aside>
@@ -78,13 +76,13 @@
     <!-- 顶栏：左面包屑，右角色区 -->
     <header class="app-header">
       <div class="app-header-left">
-        <div class="app-header-crumb">功能 / <b id="headerTitle">成本总览</b></div>
+        <div class="app-header-crumb"><b id="headerTitle">成本总览</b></div>
       </div>
       <div class="app-header-right">
         <div class="app-header-meta">
           <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
           <span class="sep"></span>
-          <span>2026-09</span>
+          <span>2026-10</span>
         </div>
         <div id="roleSwitcherSlot" data-role="home"></div>
       </div>
@@ -97,13 +95,12 @@
         <div class="page-header">
           <div class="page-title-wrap">
             <div class="page-title">非标业务成本总览</div>
-            <span class="page-badge">数据源自 169 张真实工程图</span>
           </div>
         </div>
 
         <!-- 亮点卡：产量驱动（客户反馈落地） -->
         <div class="seasonal-hero" style="margin-bottom:14px" id="seasonalDriverCard">
-          <div class="chart-title">产量驱动 · 同构件单位成本（淡季 vs 旺季）<span class="hero-tag">客户建议落地</span></div>
+          <div class="chart-title">产量驱动 · 同构件单位成本 <span class="hint-q" data-tip="对比淡季（2月）与旺季（6月）同构件的单位成本（¥/kg），体现产量驱动下的固定成本分摊效果">?</span></div>
           <div id="seasonalDriverBody" class="hero-body">加载中…</div>
         </div>
 
@@ -153,7 +150,7 @@
         <div class="chart-card" style="margin-bottom:14px">
           <div class="chart-title"><span class="ct-ico blue">单</span>在制订单成本管控（摘要）</div>
           <div class="table-hint">
-            <span class="order-note" style="margin-bottom:0">按「进度 − 领料」偏离度排序，偏离 = 领料进度 − 生产完成度</span>
+            <span class="order-note" style="margin-bottom:0">按「进度 − 领料」偏离度排序 <span class="hint-q" data-tip="偏离 = 领料进度 − 生产完成度；正值表示领料快于生产进度，需关注在制">?</span></span>
           </div>
           <div id="orderTableOverview"></div>
         </div>
@@ -169,7 +166,7 @@
           </div>
         </div>
       </section>
-
+      </section>
       <!-- 在制订单 -->
       <section class="view-panel" id="view-orders">
         <div class="page-header">
@@ -275,9 +272,8 @@ function renderSeasonalDriver() {
   var el = document.getElementById('seasonalDriverBody');
   if (!el) return;
   el.innerHTML =
-    '<b>CF-箱体 1250kg</b>：2 月 ¥' + s.unitCostLow + '/kg（产量 ' + s.low.monthVolumeTons + ' 吨） · ' +
-    '6 月 ¥' + s.unitCostHigh + '/kg（产量 ' + s.high.monthVolumeTons + ' 吨） · 淡季单位成本高 ' + s.deltaPct + '%' +
-    '<span class="hero-tag">产量驱动 · 固定成本分摊</span>';
+    '<b>CF-箱体 1250kg</b> · 淡季单位成本高 <b>' + s.deltaPct + '%</b>' +
+    '<span class="hint-q" data-tip="2 月 ¥' + s.unitCostLow + '/kg（产量 ' + s.low.monthVolumeTons + ' 吨） · 6 月 ¥' + s.unitCostHigh + '/kg（产量 ' + s.high.monthVolumeTons + ' 吨） · 由产量驱动、固定成本分摊所致">?</span>';
 }
 
 function renderOrderAlerts(targetId) {

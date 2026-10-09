@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>智衡云 · 项目挣值管控</title>
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
+<script src="shared/static-api.js"></script>
+<script src="shared/echarts.min.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
+<script src="shared/app.js?v=20261005d"></script>
+<style>
+.mth{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#fff;border:1px solid var(--gray-200);border-radius:6px;padding:10px 14px;margin-bottom:14px}
+.mth input[type=range]{width:280px;accent-color:var(--steel-600)}
+.mth .mv{font-size:15px;font-weight:700;color:var(--steel-700);font-family:var(--num-font);
+  min-width:56px;display:inline-block}
+.mth .hint{font-size:11.5px;color:var(--gray-400)}
+.quad{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.verdict{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+tr.sel td{background:#eff6ff!important}
+.bar-mini{display:inline-block;height:8px;border-radius:2px;background:var(--steel-300);vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
+</div>
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item" href="data.html">数据底座</a>
+<a class="app-sider-item" href="brain.html">智能决策中心</a>
+<a class="app-sider-item active" href="project.html">项目挣值管控</a>
+<a class="app-sider-item" href="steel.html">钢材行情</a>
+<a class="app-sider-item" href="eval.html">效果评价</a>
+<a class="app-sider-item" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>项目挣值管控</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-title">项目挣值管控 <span class="page-badge">过程快照口径</span></div>
+    <div class="page-subtitle">35 个真实在建/完工项目 · 1041 条部件结算序列 · 按月计提挣值，成本与进度两把尺子分开量</div>
+  </div>
+
+  <div class="nv-note">
+    <b>为什么 EV 不能等于 AC？</b>很多"成本跟踪"系统把已结算金额直接当作完工进度，于是
+    挣值 EV 恒等于实际成本 AC，<b>CPI 永远等于 1</b>，挣值管理退化成记账。本系统把两条线彻底分开：
+    <br>① <b>挣值 EV</b>——按<b>工期</b>计提：每个部件在其真实活跃月份区间内均匀挣取预算
+    （EV<sub>i</sub>(t) = BAC<sub>i</sub> × clamp((t − 开工月 + 1) / 活跃月数, 0, 1)），只跟日历走；
+    <br>② <b>实际成本 AC</b>——台账逐月<b>累计结算额</b>，只跟钱走；
+    <br>③ <b>计划值 PV</b>——公司基准投放曲线按项目活跃窗口缩放，作为"应该做到哪"的标尺。
+    <br>三者之差才是有意义的 CPI（成本绩效）与 SPI（进度绩效），并可外推完工估算 EAC = AC + (BAC − EV) / CPI。
+  </div>
+
+  <div class="mth">
+    <span style="font-size:12px;font-weight:700;color:var(--gray-700)">数据状态月</span>
+    <input type="range" id="mRange" min="1" max="12" step="1" value="6">
+    <span class="mv" id="mVal">6 月末</span>
+    <span class="hint">拖动可回看任意时点的项目健康度——这正是挣值管理"过程预警"的用途</span>
+    <span style="flex:1"></span>
+    <span class="hint" id="mMsg"></span>
+  </div>
+
+  <div class="nv-grid4" id="kpiRow">
+    <div class="nv-kpi"><div class="lb">完工预算 BAC</div><div class="vl" id="kBac">—</div><div class="sub">台账结算总额（全部部件）</div></div>
+    <div class="nv-kpi"><div class="lb">挣值 EV</div><div class="vl" id="kEv">—</div><div class="sub">按工期计提的已完成工作量</div></div>
+    <div class="nv-kpi"><div class="lb">实际成本 AC</div><div class="vl" id="kAc">—</div><div class="sub">台账累计结算额</div></div>
+    <div class="nv-kpi"><div class="lb">完工估算 EAC</div><div class="vl" id="kEac">—</div><div class="sub">EAC = AC + (BAC−EV)/CPI</div></div>
+  </div>
+  <div class="nv-grid4" style="margin-top:-2px">
+    <div class="nv-kpi"><div class="lb">成本绩效 CPI</div><div class="vl" id="kCpi">—</div><div class="sub">&lt;1 超支，&gt;1 已完未结</div></div>
+    <div class="nv-kpi"><div class="lb">进度绩效 SPI</div><div class="vl" id="kSpi">—</div><div class="sub">&lt;1 落后于基准曲线</div></div>
+    <div class="nv-kpi"><div class="lb">完工偏差 VAC</div><div class="vl" id="kVac">—</div><div class="sub">BAC − EAC</div></div>
+    <div class="nv-kpi"><div class="lb">待结算敞口</div><div class="vl" id="kUnsettled">—</div><div class="sub" id="kUnsettledSub">已完未结项目数</div></div>
+  </div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">全公司 PV / EV / AC 三条曲线（2024 全年）</div>
+      <div id="chCurve" class="nv-chart"></div>
+      <div class="nv-src">EV 与 AC 之间的<b>纵向缺口</b>即"已干完但还没结算"的敞口；PV 与 EV 的缺口即进度偏差。三条线在年末收束，但过程中长期分离——这正是非标制造资金占用的来源。</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">项目健康度四象限（CPI × SPI，气泡 = BAC）</div>
+      <div id="chQuad" class="nv-chart"></div>
+      <div class="nv-src">右下象限（SPI&gt;1 而 CPI&lt;1）最危险：<b>活干得快、钱花得更快</b>；左上象限是"已完未结"，利润看似好看，实为未入账成本。</div>
+    </div>
+  </div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">诊断分布（按 CPI / SPI 组合自动判定）</div>
+      <div id="chVerdict" class="nv-chart-sm"></div>
+      <div class="nv-src" id="verdictSrc"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">成本偏差 TOP 项目（CV = EV − AC）</div>
+      <div id="chRisk" class="nv-chart-sm"></div>
+      <div class="nv-src">负值表示实际结算已超过挣得的价值，即真金白银的超支。</div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:14px">
+    <div class="chart-title">项目明细（点击任意行查看该项目 S 曲线）</div>
+    <div style="max-height:420px;overflow-y:auto">
+      <table class="nv-tbl" id="tblProj">
+        <thead><tr>
+          <th>项目</th><th>市场</th><th>分厂</th><th>部件</th><th>吨位</th>
+          <th style="text-align:right">BAC</th><th style="text-align:right">EV</th><th style="text-align:right">AC</th>
+          <th style="text-align:right">挣得%</th><th style="text-align:right">结算%</th>
+          <th style="text-align:right">CPI</th><th style="text-align:right">SPI</th>
+          <th style="text-align:right">EAC</th><th style="text-align:right">VAC</th><th>判定</th>
+        </tr></thead>
+        <tbody><tr><td colspan="15" class="nv-loading">加载中…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-card" id="detailCard" style="display:none;margin-bottom:14px">
+    <div class="chart-title" id="detailTitle">项目 S 曲线</div>
+    <div class="quad">
+      <div><div id="chS" class="nv-chart-sm"></div>
+        <div class="nv-src">S 曲线：PV 为计划基准，EV 为挣值，AC 为实际成本。两线开口越大，风险越高。</div></div>
+      <div><div id="chPerf" class="nv-chart-sm"></div>
+        <div class="nv-src">逐月 CPI / SPI 走势。CPI 跌破 1 即为超支信号，SPI 跌破 1 为进度落后信号。</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var cCurve, cQuad, cVerdict, cRisk, cS, cPerf;
+  var ROWS = [], month = 6, selIdx = -1;
+
+  function $(id) { return document.getElementById(id); }
+  function fmt(v, d) { if (v === null || v === undefined || isNaN(v)) return '—'; return Number(v).toFixed(d === undefined ? 1 : d); }
+  function yuan(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    var a = Math.abs(v);
+    if (a >= 1e8) return (v / 1e8).toFixed(2) + ' 亿';
+    if (a >= 1e4) return (v / 1e4).toFixed(1) + ' 万';
+    return Number(v).toFixed(0);
+  }
+  function yuanHtml(v, unit) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    var t = yuan(v);
+    var n = t.replace(/ (亿|万)$/, ''), u = t.slice(-1);
+    return n + '<small>' + (u === '亿' || u === '万' ? u : '') + (unit || '') + '</small>';
+  }
+  function api(p) {
+    return fetch(p).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.code === 0) return j.data;
+      throw new Error((j && j.message) || '接口异常');
+    });
+  }
+  function mk(el) { return el ? echarts.init(el) : null; }
+  window.addEventListener('resize', function () {
+    [cCurve, cQuad, cVerdict, cRisk, cS, cPerf].forEach(function (c) { if (c) c.resize(); });
+  });
+
+  var VCOLOR = { '超支': '#d82820', '进度落后': '#e86008', '已完未结': '#3060d8', '进度超前': '#20b8d0', '正常': '#9050c8' };
+
+  function load() {
+    $('mMsg').textContent = '加载中…';
+    Promise.all([
+      api('/api/evm/summary?month=' + month),
+      api('/api/evm/projects?month=' + month + '&top=60&min_bac=50000'),
+      api('/api/evm/curve')
+    ]).then(function (res) {
+      var s = res[0], pr = res[1], cv = res[2];
+      ROWS = (pr && pr.rows) || [];
+      $('mMsg').textContent = ROWS.length + ' 个项目 · ' + (s.projects || 0) + ' 个纳入组合口径';
+
+      $('kBac').innerHTML = yuanHtml(s.bac, ' 元');
+      $('kEv').innerHTML = yuanHtml(s.ev, ' 元');
+      $('kAc').innerHTML = yuanHtml(s.ac, ' 元');
+      var eac = s.ac && s.cpi ? s.ac + (s.bac - s.ev) / s.cpi : null;
+      $('kEac').innerHTML = yuanHtml(eac, ' 元');
+      $('kCpi').innerHTML = fmt(s.cpi, 3);
+      $('kCpi').style.color = s.cpi < 0.95 ? '#dc2626' : (s.cpi > 1.15 ? '#2563eb' : '#16a34a');
+      $('kSpi').innerHTML = fmt(s.spi, 3);
+      $('kSpi').style.color = s.spi < 0.95 ? '#ea580c' : '#16a34a';
+      $('kVac').innerHTML = yuanHtml(s.bac - eac, ' 元');
+      $('kUnsettled').innerHTML = (s.unsettled_n || 0) + '<small>个</small>';
+      $('kUnsettledSub').textContent = '敞口金额 ' + yuan(s.unsettled_amount) + ' 元';
+
+      drawCurve(cv);
+      drawQuad();
+      drawVerdict(s.verdict_dist || {});
+      drawRisk(s.top_risk || []);
+      drawTable();
+      $('mMsg').textContent = '';
+    }).catch(function (e) {
+      $('mMsg').textContent = '加载失败：' + e.message;
+    });
+  }
+
+  function drawCurve(d) {
+    cCurve = cCurve || mk($('chCurve'));
+    if (!cCurve || !d || !d.months) return;
+    cCurve.setOption({
+      tooltip: { trigger: 'axis', valueFormatter: function (v) { return yuan(v) + ' 元'; } },
+      legend: { data: ['PV 计划值', 'EV 挣值', 'AC 实际成本'], bottom: 0, textStyle: { fontSize: 11 } },
+      grid: { left: 70, right: 24, top: 20, bottom: 40 },
+      xAxis: { type: 'category', data: d.months, axisLabel: { fontSize: 10 } },
+      yAxis: { type: 'value', name: '万元', axisLabel: { fontSize: 10, formatter: function (v) { return (v / 1e4).toFixed(0); } } },
+      series: [
+        { name: 'PV 计划值', type: 'line', smooth: true, data: d.pv, lineStyle: { width: 2, type: 'dashed', color: '#94a3b8' }, itemStyle: { color: '#94a3b8' } },
+        { name: 'EV 挣值', type: 'line', smooth: true, data: d.ev, lineStyle: { width: 2.5, color: '#2563eb' }, itemStyle: { color: '#2563eb' }, areaStyle: { color: 'rgba(37,99,235,.08)' } },
+        { name: 'AC 实际成本', type: 'line', smooth: true, data: d.ac, lineStyle: { width: 2.5, color: '#dc2626' }, itemStyle: { color: '#dc2626' } }
+      ]
+    }, true);
+  }
+
+  function drawQuad() {
+    cQuad = cQuad || mk($('chQuad'));
+    if (!cQuad || !ROWS.length) return;
+    var groups = {};
+    ROWS.forEach(function (r) {
+      (groups[r.verdict] = groups[r.verdict] || []).push([r.spi, r.cpi, r.bac, r.project]);
+    });
+    var series = Object.keys(groups).map(function (k) {
+      return {
+        name: k, type: 'scatter', data: groups[k],
+        symbolSize: function (v) { return Math.max(8, Math.min(38, Math.sqrt(v[2] / 1000) * 1.6)); },
+        itemStyle: { color: VCOLOR[k] || '#9050c8', opacity: .72,
+                     borderColor: '#fff', borderWidth: 1 }
+      };
+    });
+    cQuad.setOption({
+      tooltip: { formatter: function (p) {
+        return '<b>' + p.value[3] + '</b><br/>SPI ' + p.value[0] + ' · CPI ' + p.value[1]
+          + '<br/>BAC ' + yuan(p.value[2]) + ' 元';
+      } },
+      legend: { bottom: 0, textStyle: { fontSize: 10 } },
+      grid: { left: 60, right: 24, top: 16, bottom: 44 },
+      xAxis: { type: 'value', name: 'SPI 进度', min: 0, max: 2.2, axisLabel: { fontSize: 10 },
+               splitLine: { lineStyle: { color: '#f1f5f9' } } },
+      yAxis: { type: 'value', name: 'CPI 成本', min: 0, max: 3.2, axisLabel: { fontSize: 10 },
+               splitLine: { lineStyle: { color: '#f1f5f9' } } },
+      series: series.concat([{
+        type: 'line', data: [[1, 0], [1, 3.2]], showSymbol: false, silent: true,
+        lineStyle: { color: '#cbd5e1', width: 1, type: 'dashed' }, tooltip: { show: false }
+      }, {
+        type: 'line', data: [[0, 1], [2.2, 1]], showSymbol: false, silent: true,
+        lineStyle: { color: '#cbd5e1', width: 1, type: 'dashed' }, tooltip: { show: false }
+      }])
+    }, true);
+  }
+
+  function drawVerdict(dist) {
+    cVerdict = cVerdict || mk($('chVerdict'));
+    var ks = Object.keys(dist);
+    if (!cVerdict || !ks.length) return;
+    var data = ks.map(function (k) {
+      return { name: k, value: dist[k], itemStyle: { color: VCOLOR[k] || '#9050c8' } };
+    });
+    cVerdict.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c} 个 ({d}%)' },
+      legend: { bottom: 0, textStyle: { fontSize: 10 } },
+      series: [{ type: 'pie', radius: ['42%', '68%'], center: ['50%', '44%'],
+                 data: data, label: { fontSize: 10, formatter: '{b}\n{c}' },
+                 itemStyle: { borderColor: '#fff', borderWidth: 2 },
+                 labelLine: { lineStyle: { width: 1.2 } } }]
+    }, true);
+    $('verdictSrc').innerHTML = '判定规则：CPI&lt;0.90 → <b>超支</b>；CPI&gt;1.20 → <b>已完未结</b>；'
+      + 'SPI&lt;0.90 → <b>进度落后</b>；SPI&gt;1.10 → <b>进度超前</b>；其余为正常。'
+      + '当前「已完未结」' + (dist['已完未结'] || 0) + ' 个，是财务口径最需要关注的信号。';
+  }
+
+  function drawRisk(top) {
+    cRisk = cRisk || mk($('chRisk'));
+    if (!cRisk || !top.length) return;
+    var t = top.slice().sort(function (a, b) { return a.cv - b.cv; });
+    cRisk.setOption({
+      tooltip: { trigger: 'axis', valueFormatter: function (v) { return yuan(v) + ' 元'; } },
+      grid: { left: 110, right: 50, top: 12, bottom: 24 },
+      xAxis: { type: 'value', name: 'CV(元)', axisLabel: { fontSize: 10, formatter: function (v) { return (v / 1e4).toFixed(0) + '万'; } } },
+      yAxis: { type: 'category', data: t.map(function (r) { return r.project; }), axisLabel: { fontSize: 10 } },
+      series: [{
+        type: 'bar', barWidth: 12,
+        data: t.map(function (r) { return { value: r.cv, itemStyle: { color: r.cv < 0 ? '#dc2626' : '#16a34a' } }; })
+      }]
+    }, true);
+  }
+
+  function drawTable() {
+    var tb = $('tblProj').querySelector('tbody'), html = '';
+    if (!ROWS.length) { tb.innerHTML = '<tr><td colspan="15" class="nv-loading">无数据</td></tr>'; return; }
+    ROWS.forEach(function (r, i) {
+      var vc = VCOLOR[r.verdict] || '#9050c8';
+      var cpiCls = r.cpi < 0.9 ? 'nv-bad' : (r.cpi > 1.2 ? 'nv-info' : 'nv-good');
+      var spiCls = r.spi < 0.9 ? 'nv-warn' : (r.spi > 1.1 ? 'nv-good' : 'nv-gray');
+      html += '<tr data-i="' + i + '" style="cursor:pointer">'
+        + '<td><b>' + r.project + '</b></td>'
+        + '<td>' + (r.market || '—') + '</td>'
+        + '<td>' + (r.depts || []).join('/') + '</td>'
+        + '<td>' + r.parts + '</td>'
+        + '<td class="num">' + fmt(r.tonnage, 1) + '</td>'
+        + '<td class="num">' + yuan(r.bac) + '</td>'
+        + '<td class="num">' + yuan(r.ev) + '</td>'
+        + '<td class="num">' + yuan(r.ac) + '</td>'
+        + '<td class="num">' + fmt(r.earned_pct, 0) + '%</td>'
+        + '<td class="num">' + fmt(r.settled_pct, 0) + '%</td>'
+        + '<td class="num"><span class="nv-tag ' + cpiCls + '">' + fmt(r.cpi, 2) + '</span></td>'
+        + '<td class="num"><span class="nv-tag ' + spiCls + '">' + fmt(r.spi, 2) + '</span></td>'
+        + '<td class="num">' + yuan(r.eac) + '</td>'
+        + '<td class="num">' + yuan(r.vac) + '</td>'
+        + '<td><span class="verdict" style="background:' + vc + '1a;color:' + vc + '">' + r.verdict + '</span></td>'
+        + '</tr>';
+    });
+    tb.innerHTML = html;
+    Array.prototype.forEach.call(tb.querySelectorAll('tr[data-i]'), function (tr) {
+      tr.addEventListener('click', function () { select(parseInt(tr.getAttribute('data-i'), 10), tr); });
+    });
+  }
+
+  function select(i, tr) {
+    Array.prototype.forEach.call($('tblProj').querySelectorAll('tr'), function (x) { x.className = ''; });
+    if (tr) tr.className = 'sel';
+    var r = ROWS[i];
+    if (!r) return;
+    $('detailCard').style.display = '';
+    $('detailTitle').textContent = r.project + ' · S 曲线与绩效走势（' + r.first_month + '—' + r.last_month + ' 月活跃）';
+    var sc = r.schedule || {}, mn = [];
+    for (var k = 1; k <= 12; k++) mn.push(k + '月');
+    cS = cS || mk($('chS'));
+    if (cS) {
+      cS.setOption({
+        tooltip: { trigger: 'axis', valueFormatter: function (v) { return yuan(v) + ' 元'; } },
+        legend: { data: ['PV', 'EV', 'AC'], bottom: 0, textStyle: { fontSize: 10 } },
+        grid: { left: 66, right: 20, top: 16, bottom: 38 },
+        xAxis: { type: 'category', data: mn, axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'value', axisLabel: { fontSize: 10, formatter: function (v) { return (v / 1e4).toFixed(0) + '万'; } } },
+        series: [
+          { name: 'PV', type: 'line', smooth: true, data: sc.pv, lineStyle: { type: 'dashed', color: '#94a3b8' }, itemStyle: { color: '#94a3b8' } },
+          { name: 'EV', type: 'line', smooth: true, data: sc.ev, lineStyle: { color: '#2563eb', width: 2.5 }, itemStyle: { color: '#2563eb' }, areaStyle: { color: 'rgba(37,99,235,.08)' } },
+          { name: 'AC', type: 'line', smooth: true, data: sc.ac, lineStyle: { color: '#dc2626', width: 2.5 }, itemStyle: { color: '#dc2626' } }
+        ]
+      }, true);
+    }
+    var mth = r.monthly || [];
+    cPerf = cPerf || mk($('chPerf'));
+    if (cPerf && mth.length) {
+      cPerf.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['CPI', 'SPI'], bottom: 0, textStyle: { fontSize: 10 } },
+        grid: { left: 56, right: 20, top: 16, bottom: 38 },
+        xAxis: { type: 'category', data: mth.map(function (m) { return m.month + '月'; }), axisLabel: { fontSize: 10 } },
+        yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+        series: [
+          { name: 'CPI', type: 'line', data: mth.map(function (m) { return m.cpi; }), smooth: true,
+            lineStyle: { color: '#2563eb', width: 2 }, itemStyle: { color: '#2563eb' },
+            markLine: { silent: true, symbol: 'none', data: [{ yAxis: 1 }],
+                        lineStyle: { color: '#cbd5e1', type: 'dashed' }, label: { fontSize: 9 } } },
+          { name: 'SPI', type: 'line', data: mth.map(function (m) { return m.spi; }), smooth: true,
+            lineStyle: { color: '#16a34a', width: 2 }, itemStyle: { color: '#16a34a' } }
+        ]
+      }, true);
+    }
+    setTimeout(function () { if (cS) cS.resize(); if (cPerf) cPerf.resize(); }, 30);
+  }
+
+  $('mRange').addEventListener('input', function () {
+    month = parseInt(this.value, 10);
+    $('mVal').textContent = month + ' 月末';
+  });
+  $('mRange').addEventListener('change', function () {
+    month = parseInt(this.value, 10);
+    $('mVal').textContent = month + ' 月末';
+    load();
+  });
+
+  load();
+})();
+</script>
+</main>
+  </div>
+</div>
+</body>
+</html>

@@ -4,41 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 车间管控端</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
 <script src="shared/cost-assumptions.js"></script>
-<script src="shared/app.js"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/api.js"></script>
 </head>
 <body>
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div><div class="topbar-title">车间管控</div></div>
-  </div>
-    <div class="topbar-right">
-    <span>2026-09</span>
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <div id="roleSwitcherSlot" data-role="workshop"></div>
-  </div>
-</div>
-<div class="role-layout">
-  <div class="role-sidebar">
-    <div class="role-sidebar-title">功能</div>
-    <div class="role-nav-item active" onclick="switchNav(this,0)">待开工工单</div>
-    <div class="role-nav-item" onclick="switchNav(this,1)">生产中工单</div>
-    <div class="role-nav-item" onclick="switchNav(this,2)">已完工工单</div>
-    <div class="role-nav-item" onclick="switchNav(this,3)">余废料台账</div>
-  </div>
-  <div class="role-main">
-    <div class="role-page-head">
-      <div class="role-page-title">车间生产工作台</div>
+<div class="app-shell">
+  <aside class="app-sider">
+    <div class="app-sider-brand">
+      <div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+      <div>
+        <div class="app-sider-name">智衡云</div>
+        <div class="app-sider-sub">非标作业智能成本管控</div>
+      </div>
     </div>
+    <nav class="app-sider-nav">
+      <div class="app-sider-group">功能</div>
+      <div class="app-sider-item active" onclick="switchNav(this,0)">待开工工单</div>
+      <div class="app-sider-item" onclick="switchNav(this,1)">生产中工单</div>
+      <div class="app-sider-item" onclick="switchNav(this,2)">已完工工单</div>
+      <div class="app-sider-item" onclick="switchNav(this,3)">余废料台账</div>
+    </nav>
+  </aside>
+
+  <div class="app-body">
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-header-crumb"><b>车间管控</b></div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-header-meta">
+          <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
+          <span class="sep"></span>
+          <span>2026-10</span>
+        </div>
+        <div id="roleSwitcherSlot" data-role="workshop"></div>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="role-page-head">
+        <div class="role-page-title">车间生产工作台</div>
+      </div>
     <div class="role-kpi-grid" id="wsKpi"></div>
 
     <!-- 待开工工单 -->
     <div class="role-panel" id="panel-wait">
-      <div class="role-section-title">待开工工单（工艺定额已下达）</div>
+      <div class="role-section-title">待开工工单 <span class="hint-q" data-tip="仅展示工艺定额已下达、具备开工条件的工单">?</span></div>
       <div id="waitList"></div>
     </div>
 
@@ -59,6 +74,7 @@
       <div class="role-section-title">余废料台账</div>
       <div id="scrapList"></div>
     </div>
+    </main>
   </div>
 </div>
 
@@ -76,10 +92,10 @@
 
 <script>
 function switchNav(el, idx) {
-  var items = document.querySelectorAll('.role-nav-item');
+  var items = document.querySelectorAll('.app-sider-item');
   for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
   el.classList.add('active');
-  var panels = document.querySelectorAll('.role-main .role-panel');
+  var panels = document.querySelectorAll('.app-content .role-panel');
   if (panels[idx]) {
     panels[idx].scrollIntoView({behavior:'smooth', block:'start'});
   } else {
@@ -94,10 +110,10 @@ function renderWorkshop() {
   var prod = DB.workOrders.filter(function(w){return w.status==='in_production';});
   var done = DB.workOrders.filter(function(w){return w.status==='completed' || w.status==='posted' || w.status==='done';});
   document.getElementById('wsKpi').innerHTML =
-    '<div class="role-kpi-card"><div class="rk-label">待开工</div><div class="rk-value">' + wait.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">生产中</div><div class="rk-value" style="color:#2563eb">' + prod.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">今日完工</div><div class="rk-value" style="color:#16a34a">' + done.length + '</div></div>' +
-    '<div class="role-kpi-card"><div class="rk-label">异常预警</div><div class="rk-value" style="color:#dc2626">' + DB.riskAlerts.filter(function(a){return a.status==='open';}).length + '</div></div>';
+    '<div class="role-kpi-card blue"><div class="rk-label">待开工</div><div class="rk-value">' + wait.length + '</div><div class="rk-sub">待开工工单数</div></div>' +
+    '<div class="role-kpi-card blue"><div class="rk-label">生产中</div><div class="rk-value">' + prod.length + '</div><div class="rk-sub">生产中工单数</div></div>' +
+    '<div class="role-kpi-card green"><div class="rk-label">今日完工</div><div class="rk-value">' + done.length + '</div><div class="rk-sub">今日已完工</div></div>' +
+    '<div class="role-kpi-card red"><div class="rk-label">异常预警</div><div class="rk-value">' + DB.riskAlerts.filter(function(a){return a.status==='open';}).length + '</div><div class="rk-sub">未闭环风险预警</div></div>';
 
   // 待开工
   var whtml = '';
@@ -175,18 +191,15 @@ function openReport(woId) {
     '<div style="grid-column:1/-1"><label style="font-size:12px;color:var(--gray-600);display:block;margin-bottom:4px">余废料率（%）</label><input type="number" id="rptScrap" value="' + scrapDefault + '" step="0.1" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
     '</div>' +
     '<div style="margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px">' +
-    '<div style="font-size:12px;font-weight:700;color:var(--gray-800);margin-bottom:8px">实际数双源对照（定额建议 · 仓库出库 · 人工填报）</div>' +
+    '<div style="font-size:12px;font-weight:700;color:var(--gray-800);margin-bottom:8px">实际数双源对照 <span class="hint-q" data-tip="对同一材料消耗取三路数据源交叉校验：定额建议、仓库出库、人工填报；差异超过 ' +
+    (typeof COST_ASSUMPTIONS !== 'undefined' ? COST_ASSUMPTIONS.dualSourceTolerancePct : 8) + '% 将触发「双源不一致」预警">?</span></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
     '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">定额建议量（kg）</label><input type="number" id="rptSuggest" value="' + suggest + '" readonly style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;background:#f1f5f9"></div>' +
     '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">仓库出库量（kg）</label><input type="number" id="rptWarehouse" value="' + whDefault + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
     '<div><label style="font-size:11px;color:var(--gray-500);display:block;margin-bottom:4px">人工填报量（kg）</label><input type="number" id="rptManual" value="' + suggest + '" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></div>' +
     '</div>' +
-    '<div style="font-size:10px;color:var(--gray-400);margin-top:8px;line-height:1.5">演示默认：出库略高于定额。企业侧可对接出入库与 MES；不一致超 ' +
-    (typeof COST_ASSUMPTIONS !== 'undefined' ? COST_ASSUMPTIONS.dualSourceTolerancePct : 8) + '% 将触发「双源不一致」预警。</div></div>' +
-    '<div style="margin-top:12px;padding:10px;background:#eff6ff;border-radius:6px;font-size:11px;color:var(--steel-700);line-height:1.6">' +
-    '<strong>定额对比：</strong>预估工时' + w.estHours + 'h · 定额钢材' + w.weight + 'kg · 定额焊材' + Math.round(w.weldLength*0.8) + 'kg<br>' +
-    '提交后自动检测：工时/钢材/焊材/外协/废料 + 进度领料偏离（' + ORDER_DEV_WATCH + '%/' + ORDER_DEV_BAD + '%）+ 双源不一致' +
-    '</div>';
+    '</div>' +
+    '<div style="margin-top:12px;font-size:11px;color:var(--gray-500)">提交后自动检测 <span class="hint-q" data-tip="检测项：工时 / 钢材 / 焊材 / 外协 / 废料 + 进度-领料偏离（' + ORDER_DEV_WATCH + '% / ' + ORDER_DEV_BAD + '%）+ 双源不一致（定额建议 / 仓库出库 / 人工填报）">?</span></div>';
   document.getElementById('reportModal').style.display = 'flex';
 }
 

@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 真实数据底座</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/echarts.min.js"></script>
 <style>
 .data-note{background:#f0f7ff;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a5f;margin-bottom:18px;line-height:1.7}
@@ -26,21 +28,36 @@
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div>
-      <div class="topbar-title">非标作业智能成本管控体系</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <a href="index.html" class="topbar-link">返回企业看板</a>
-    <a href="eval.html" class="topbar-link">效果评价</a>
-    <a href="tech.html" class="topbar-link">技术说明</a>
-  </div>
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
 </div>
-
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item active" href="data.html">数据底座</a>
+<a class="app-sider-item" href="brain.html">智能决策中心</a>
+<a class="app-sider-item" href="project.html">项目挣值管控</a>
+<a class="app-sider-item" href="steel.html">钢材行情</a>
+<a class="app-sider-item" href="eval.html">效果评价</a>
+<a class="app-sider-item" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>数据底座</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
 <div class="page-container">
   <div class="page-header">
     <div class="page-title">真实数据底座 <span class="page-badge">169 张图纸 · 233 条 BOM</span></div>
@@ -70,14 +87,29 @@
           <td>每张图纸的线条/曲线/矩形数量、图元密度，作为结构复杂度的客观指标</td>
         </tr>
         <tr>
-          <td><b>钢材 / 焊材价格</b></td><td>Mysteel 我的钢铁网公开行情（华东，2026-09-14）</td>
-          <td><span class="tag tag-partial">公开行情</span></td>
-          <td>Q235B 3700、Q355B 3980、304 13800、316L 28800 元/吨；企业真实采购价到位后整体替换</td>
+          <td><b>企业工时标准</b></td><td>《2024工时标准（环保）.xlsx》</td>
+          <td><span class="tag tag-ok">企业真实</span></td>
+          <td>14 类部件的正式结算单价（元/吨），按<b>下料 / 机加工 / 铆焊 / 油漆 / 包装</b>五道工序拆分，
+              国内与国外两套价格。作为定额模型的<b>先验</b>（不可学习、可追责）</td>
         </tr>
         <tr>
-          <td><b>工时定额基准</b></td><td>行业经验区间 15–40 h/t，取 22 h/t 为基准</td>
+          <td><b>工时结算台账</b></td><td>《2024年工时台账.xlsx》（二分厂 / 三分厂 / 涂装分厂 / 计划部物流组）</td>
+          <td><span class="tag tag-ok">企业真实</span></td>
+          <td>1194 条月度结算记录 → 1041 个「分厂-项目-部件」序列，其中 500 条有吨位可算单位成本。
+              模型训练集与挣值管理全部由此驱动</td>
+        </tr>
+        <tr>
+          <td><b>钢材采购明细</b></td><td>《钢材采购明细.xls》2099 行订单</td>
+          <td><span class="tag tag-ok">企业真实</span></td>
+          <td>含品名、牌号、规格、数量、含税/不含税单价、日期。
+              按<b>采购量加权</b>得出 42 个牌号的真实成交均价（Q235B 4057、Q355B 4241、304 14404、316L 25468 元/吨含税），
+              已整体替换此前的公开行情占位价；月度对数收益波动率 19.26% 直接作为蒙特卡洛 σ 输入</td>
+        </tr>
+        <tr>
+          <td><b>焊材 / 耗材 / 制造费用</b></td><td>行业公开区间 + 企业费用率结构</td>
           <td><span class="tag tag-partial">行业推算</span></td>
-          <td><b>PDF 中不含工时数据</b>（工时属于工艺文件，不在图纸上），故按行业基准 + 材质/复杂度/批量/板厚系数建模</td>
+          <td>焊丝 ER50-6、涂料、设备/管理/外协/安装费率。占成本比重约 20%~30%，
+              企业真实费用科目到位后替换 <code>data/price_catalog.json</code> 即可</td>
         </tr>
         <tr>
           <td><b>预算 / 财务数据</b></td><td>20250816_财务表格（格式参考）</td>
@@ -85,17 +117,19 @@
           <td>该表数据非真实，仅用于演示系统链路，不参与任何结论</td>
         </tr>
         <tr>
-          <td><b>历史完工样本</b></td><td>基于真实构件 + 模型残差（σ=9%）生成</td>
+          <td><b>历史完工样本</b></td><td>基于真实构件 + 模型残差生成</td>
           <td><span class="tag tag-null">模拟样本</span></td>
-          <td>用于验证评价体系链路；标注 <code>source=simulated</code>，与真实数据严格区分</td>
+          <td>仅用于验证「图纸识别→报工→评价」链路；标注 <code>source=simulated</code>，与真实数据严格区分</td>
         </tr>
       </tbody>
     </table>
     <div class="src" style="margin-top:10px;line-height:1.8">
-      <b>小结：</b>图纸能提供的「构件构成、重量、材质、结构复杂度」已全部用上，占成本模型输入变量的绝大部分；
-      真正缺的是两类——<b>① 工时定额</b>（决定人工成本）、<b>② 材料采购价</b>（决定材料成本）。
-      前者需要企业提供历史工时台账或工时定额表，后者需要采购价目表；拿到后替换
-      <code>data/price_catalog.json</code> 并重训模型即可，系统其余部分无需改动。
+      <b>小结：</b>决定非标成本的两大变量——<b>工时定额</b>与<b>材料采购价</b>——已全部换成菲达环保的真实数据，
+      成本模型的两个最大输入不再是估算。目前仅剩焊材/制造费用等次要科目仍为行业区间（占比约 20%~30%），
+      企业费用科目到位后替换 <code>data/price_catalog.json</code> 并重训即可，系统其余部分无需改动。
+      <br><b>口径提醒：</b>真实台账中仅 10.6% 的部件能在企业《工时标准》里查到对应条目，
+      其余 89.4% 处于<b>无定额</b>状态——这正是本项目要解决的核心痛点之一，也是模型必须用
+      「先验 + 残差学习」而非直接套定额的原因。
     </div>
   </div>
 
@@ -269,5 +303,8 @@ window.addEventListener('resize',()=>{
 });
 init();
 </script>
+</main>
+  </div>
+</div>
 </body>
 </html>

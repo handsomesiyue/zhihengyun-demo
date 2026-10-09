@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  var ONLINE_URL = 'https://macbook-pro.tail17deb.ts.net';
+  var ONLINE_URL = 'https://handsomesiyue.github.io/zhihengyun-demo/';
   var DB_KEY = 'ai_cost_control_data';
   var SEED_KEY = 'static_seed_version';
 

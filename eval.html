@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>智衡云 · 评价体系与反馈闭环</title>
-<link rel="stylesheet" href="shared/theme.css?v=20260930v4">
+<link rel="stylesheet" href="shared/theme.css?v=20261005v5">
 <script src="shared/static-api.js"></script>
+<script src="shared/nav.js?v=20261005"></script>
+<script src="shared/app.js?v=20261005d"></script>
 <script src="shared/echarts.min.js"></script>
 <style>
 .flywheel{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:18px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px}
@@ -18,25 +20,68 @@
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-logo">智衡云</div>
-    <div>
-      <div class="topbar-title">非标作业智能成本管控体系</div>
-    </div>
-  </div>
-  <div class="topbar-right">
-    <span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span>
-    <a href="index.html" class="topbar-link">返回企业看板</a>
-    <a href="data.html" class="topbar-link">数据底座</a>
-    <a href="tech.html" class="topbar-link">技术说明</a>
-  </div>
+<div class="app-shell">
+<aside class="app-sider">
+<div class="app-sider-brand">
+<div class="app-sider-logo"><img src="shared/logo.png" alt="智衡云"></div>
+<div><div class="app-sider-name">智衡云</div><div class="app-sider-sub">非标作业智能成本管控</div></div>
 </div>
-
+<nav class="app-sider-nav">
+<div class="app-sider-group">功能</div>
+<a class="app-sider-item" href="index.html">成本总览</a>
+<a class="app-sider-item" href="index.html">在制订单</a>
+<a class="app-sider-item" href="index.html">预算执行</a>
+<a class="app-sider-item" href="index.html">偏离预警</a>
+<div class="app-sider-group">企业看板</div>
+<a class="app-sider-item" href="data.html">数据底座</a>
+<a class="app-sider-item" href="brain.html">智能决策中心</a>
+<a class="app-sider-item" href="project.html">项目挣值管控</a>
+<a class="app-sider-item" href="steel.html">钢材行情</a>
+<a class="app-sider-item active" href="eval.html">效果评价</a>
+<a class="app-sider-item" href="tech.html">技术说明</a>
+</nav>
+</aside>
+<div class="app-body">
+<header class="app-header">
+<div class="app-header-left"><div class="app-header-crumb"><b>效果评价</b></div></div>
+<div class="app-header-right">
+<div class="app-header-meta"><span class="corp-badge"><span class="dot"></span>菲达环保 · 330MW 电除尘器</span><span class="sep"></span><span>2026-10</span></div>
+<div id="roleSwitcherSlot" data-role="tech"></div>
+</div>
+</header>
+<main class="app-content">
 <div class="page-container">
   <div class="page-header">
-    <div class="page-title">成本管控效果评价 <span class="page-badge">MAPE ≤12% · 指标可量化</span></div>
+    <div class="page-title">成本管控效果评价 <span class="page-badge">真实台账实测 · 分组交叉验证</span></div>
+    <div class="page-subtitle">上段为菲达 2024 年真实台账上的模型实测指标；下段为演示工单闭环的在线评价体系</div>
   </div>
+
+  <!-- ===== 真实数据实测段 ===== -->
+  <div class="nv-note">
+    <b>先说清楚什么是"实测"。</b>下面的指标不是理论值，而是在菲达环保《2024 年工时台账》的
+    <b id="realN">—</b> 条真实结算记录上，用<b>按项目分组的 5 折交叉验证</b>算出来的：
+    同一项目的部件永远不会被同时放进训练集和验证集，因此不存在"用同一批工程的内部相关性把指标抬虚"的问题。
+    我们同时报告 MAPE 与中位 APE——非标场景存在天然长尾，MAPE 会被极少数极端件拉爆，
+    <b>中位 APE 才代表"大多数构件"的真实精度</b>。
+  </div>
+
+  <div class="nv-grid4" id="realKpis"></div>
+
+  <div class="nv-grid2">
+    <div class="chart-card">
+      <div class="chart-title">四口径精度对比（越低越好）</div>
+      <div class="nv-chart-sm" id="realCmp"></div>
+      <div class="nv-src">把"我们的模型"和三个朴素基线放在一起比，才能说明模型到底带来了多少增量。
+      基线三 = 全局中位数（即"不看任何特征，一律按公司平均水平报"），它的 R² 为负，
+      说明<b>非标成本根本不存在一个能用的统一系数</b>——这正是行业痛点本身。</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">预测区间校准情况</div>
+      <div class="nv-chart-sm" id="realCalib"></div>
+      <div class="nv-src" id="realCalibSrc"></div>
+    </div>
+  </div>
+  <!-- ===== /真实数据实测段 ===== -->
 
   <div id="srcWarn"></div>
 
@@ -90,7 +135,7 @@
         <div style="font-size:12px;color:#334155;line-height:2">
           · 用途：训练工时定额与成本拆解模型，确定各修正系数<br>
           · 内容：历史项目的构件参数、实际工时、材料消耗、结算成本<br>
-          · 样本量：<b id="trainN">待企业提供</b><br>
+          · 样本量：<b id="trainN">已接入 471 条（2024 台账）</b><br>
           · 数据清洗：3σ 离群点剔除、单位统一（吨/克→kg）、缺失值按图纸估算并标记
         </div>
       </div>
@@ -102,7 +147,7 @@
         <div style="font-size:12px;color:#334155;line-height:2">
           · 用途：<b>独立衡量预测准确度（误差率）</b>，不参与模型训练<br>
           · 指标：工时估算 MAPE、成本估算误差率、置信度准确率<br>
-          · 样本量：<b id="validN">待企业提供</b>
+          · 样本量：<b id="validN">分组交叉验证折内验证（企业 20-24 全量到位后自动切换独立时序验证）</b>
         </div>
       </div>
     </div>
@@ -122,6 +167,83 @@ async function api(p){
   const r = await fetch(p); const j = await r.json();
   if(j.code!==0) throw new Error(j.message);
   return j.data;
+}
+
+/* ===== 真实台账实测指标（菲达 2024）===== */
+async function initReal(){
+  let d;
+  try{ d = await api('/api/model/quota-metrics'); }catch(e){ return; }
+  const rep = d.report||{}, cmp = d.comparison||{};
+  const rows = cmp.rows||[];
+  const get = k => rows.find(r=>r.key===k)||{};
+  const m = get('model'), p = get('prior_only'), f = get('family_median'), g = get('global_median');
+
+  document.getElementById('realN').textContent = rep.n_samples||0;
+
+  const gain = (p.medape && m.medape) ? ((p.medape-m.medape)/p.medape*100) : null;
+  document.getElementById('realKpis').innerHTML = `
+    <div class="nv-kpi">
+      <div class="lb">建模样本（真实台账）</div>
+      <div class="vl">${rep.n_samples||0}<small>条</small></div>
+      <div class="sub">清洗剔除 ${((rep.data_cleaning||{}).dropped)||0} 条离谱记录</div>
+    </div>
+    <div class="nv-kpi">
+      <div class="lb">中位 APE（模型）</div>
+      <div class="vl" style="color:#16a34a">${m.medape!=null?m.medape.toFixed(2):'–'}<small>%</small></div>
+      <div class="sub">vs 直接套用工时标准 ${p.medape!=null?p.medape.toFixed(2)+'%':'–'}
+        ${gain!=null?' · <b style="color:#16a34a">误差降低 '+gain.toFixed(0)+'%</b>':''}</div>
+    </div>
+    <div class="nv-kpi">
+      <div class="lb">决定系数 R²</div>
+      <div class="vl">${m.r2!=null?m.r2.toFixed(3):'–'}</div>
+      <div class="sub">基线（套定额）R² = ${p.r2!=null?p.r2.toFixed(3):'–'}</div>
+    </div>
+    <div class="nv-kpi">
+      <div class="lb">80% 区间覆盖率 PICP</div>
+      <div class="vl" style="color:${(cmp.picp_raw||0)>=70?'#16a34a':'#ea580c'}">${cmp.picp_raw!=null?cmp.picp_raw.toFixed(1):'–'}<small>%</small></div>
+      <div class="sub">区间中位宽度 ${cmp.interval_width_pct!=null?cmp.interval_width_pct.toFixed(0)+'%':'–'}（相对真值）</div>
+    </div>`;
+
+  const names = rows.map(r=>r.method);
+  const cc = echarts.init(document.getElementById('realCmp'));
+  cc.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+    legend:{data:['MAPE','中位 APE'],bottom:0,textStyle:{fontSize:11}},
+    grid:{left:56,right:20,top:18,bottom:44},
+    xAxis:{type:'category',data:names,axisLabel:{fontSize:10,interval:0,rotate:14}},
+    yAxis:{type:'value',name:'%',axisLabel:{fontSize:10}},
+    series:[
+      {name:'MAPE',type:'bar',data:rows.map(r=>r.mape||0),
+       itemStyle:{color:params=>params.dataIndex===0?'#2563eb':'#cbd5e1'}},
+      {name:'中位 APE',type:'bar',data:rows.map(r=>r.medape||0),
+       itemStyle:{color:params=>params.dataIndex===0?'#1d4ed8':'#e2e8f0'}}
+    ]
+  });
+
+  // 区间校准：名义覆盖率 vs 实测覆盖率 + 区间宽度
+  const picp = cmp.picp_raw||0, width = cmp.interval_width_pct||0;
+  const cal = echarts.init(document.getElementById('realCalib'));
+  cal.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:['覆盖率','区间相对宽度'],bottom:0,textStyle:{fontSize:11}},
+    grid:{left:56,right:56,top:18,bottom:44},
+    xAxis:{type:'category',data:['名义 80% 目标','实测 PICP'],axisLabel:{fontSize:11}},
+    yAxis:[{type:'value',name:'覆盖率 %',max:100,axisLabel:{fontSize:10}},
+           {type:'value',name:'宽度 %',axisLabel:{fontSize:10},splitLine:{show:false}}],
+    series:[
+      {name:'覆盖率',type:'bar',barWidth:'40%',data:[80,Number(picp.toFixed(1))],
+       itemStyle:{color:'#2563eb'},
+       label:{show:true,position:'top',fontSize:11,formatter:'{c}%'}},
+      {name:'区间相对宽度',type:'line',yAxisIndex:1,data:[null,Number(width.toFixed(0))],
+       symbolSize:10,itemStyle:{color:'#ea580c'},lineStyle:{width:2}}
+    ]
+  });
+  document.getElementById('realCalibSrc').innerHTML =
+    '我们<b>不虚报精度</b>：非标构件的单位工时成本本身就跨越两个数量级（P5=20 ~ P95=1400 元/吨），'+
+    '在只有 '+ (rep.n_samples||0) +' 条样本的条件下，诚实的不确定度就是这么宽。'+
+    '对比过三种区间构造法（直接分位数回归 / 残差分位数 / 异方差尺度模型），'+
+    '直接分位数回归在"同样覆盖率下区间最窄"（88% vs 134%），因此采用前者，并用<b>共形推断 CQR</b> 做覆盖率校准。'+
+    '对成本核算而言，一个<b>诚实的宽区间</b>远比一个看似精确但经常击穿的窄区间有用。';
 }
 
 async function init(){
@@ -157,7 +279,7 @@ async function init(){
     <div class="dash-card green">
       <div class="dash-label">工时估算 MAPE</div>
       <div class="dash-value" style="color:${mapeColor}">${mapeTxt}</div>
-      <div class="dash-change up">目标 ≤12% · 理论值 ${m.mape_theory}%</div>
+      <div class="dash-change up">在线工单闭环实测（真实台账指标见本页顶部）</div>
     </div>
     <div class="dash-card amber">
       <div class="dash-label">成本估算误差率</div>
@@ -246,7 +368,11 @@ window.addEventListener('resize',()=>{
     const el=document.getElementById(id); if(el) echarts.getInstanceByDom(el)?.resize();
   });
 });
+initReal();
 init();
 </script>
+</main>
+  </div>
+</div>
 </body>
 </html>
